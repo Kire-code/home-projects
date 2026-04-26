@@ -1055,29 +1055,30 @@ function newId() { return nextId++; }
 
 // ── Seed data ──────────────────────────────────────────
 function seedData() {
-  db.projects = [
-    { id: newId(), name: "Repaint bedroom walls", loc: "Bedroom", cat: "DIY / Renovations", status: "Done", prio: "Medium", start: "2026-01-10", due: "2026-01-20", budget: 25000, contractor: "Self", notes: "Eggshell finish, 2 coats" },
-    { id: newId(), name: "Fix leaking bathroom tap", loc: "Bathroom", cat: "Repairs", status: "Done", prio: "High", start: "2026-02-05", due: "2026-02-06", budget: 8000, contractor: "Self", notes: "" },
-    { id: newId(), name: "Plant spring garden beds", loc: "Back garden", cat: "Garden & Landscaping", status: "In Progress", prio: "Low", start: "2026-03-15", due: "2026-05-01", budget: 35000, contractor: "Self", notes: "Tulips, lavender, roses" },
-  ];
-  db.costs = [
-    { id: newId(), projectId: db.projects[0].id, desc: "Paint & primer", amount: 8900, date: "2026-01-11", cat: "Materials", photo: null },
-    { id: newId(), projectId: db.projects[0].id, desc: "Brushes & tape", amount: 3200, date: "2026-01-11", cat: "Materials", photo: null },
-    { id: newId(), projectId: db.projects[0].id, desc: "Drop cloths", amount: 2100, date: "2026-01-12", cat: "Materials", photo: null },
-    { id: newId(), projectId: db.projects[1].id, desc: "Replacement tap", amount: 5200, date: "2026-02-05", cat: "Materials", photo: null },
-    { id: newId(), projectId: db.projects[2].id, desc: "Seeds & bulbs", amount: 6800, date: "2026-03-16", cat: "Materials", photo: null },
-    { id: newId(), projectId: db.projects[2].id, desc: "Compost bags", amount: 4200, date: "2026-03-18", cat: "Materials", photo: null },
-  ];
-  db.timeLog = [
-    { id: newId(), projectId: db.projects[0].id, date: "2026-01-10", hours: 2, notes: "Prep — taped edges, moved furniture" },
-    { id: newId(), projectId: db.projects[0].id, date: "2026-01-11", hours: 4, notes: "First coat on all walls" },
-    { id: newId(), projectId: db.projects[0].id, date: "2026-01-12", hours: 3, notes: "Second coat, touch-ups" },
-    { id: newId(), projectId: db.projects[1].id, date: "2026-02-05", hours: 1.5, notes: "Replaced tap and tested" },
-    { id: newId(), projectId: db.projects[2].id, date: "2026-03-15", hours: 2, notes: "Dug and prepared beds" },
-    { id: newId(), projectId: db.projects[2].id, date: "2026-03-19", hours: 1.5, notes: "Planted tulips and lavender" },
-  ];
-  db.invoices = [];
-  db.quotes = [];
+  db = {
+    "projects": [
+      { "id": 16, "name": "Mála húsið", "loc": "", "cat": "DIY / Renovations", "status": "Planned", "prio": "Medium", "start": "2026-05-01", "due": "2026-06-30", "budget": 1000000, "contractor": "", "notes": "", "propertyId": 22 },
+      { "id": 18, "name": "Mála grindverk í garði", "loc": "garður", "cat": "DIY / Renovations", "status": "Planned", "prio": "Medium", "start": "2026-04-25", "due": "", "budget": 0, "contractor": "", "notes": "", "propertyId": 22 },
+      { "id": 19, "name": "Færa þvottahús", "loc": "Bath/loundry", "cat": "DIY / Renovations", "status": "Planned", "prio": "Medium", "start": "2026-04-25", "due": "", "budget": 0, "contractor": "", "notes": "þarf að skoða með að fá hillu eða þá innréttingu undir þvottavélina", "propertyId": 22 },
+      { "id": 20, "name": "Laga pottinn", "loc": "Garður", "cat": "DIY / Renovations", "status": "Planned", "prio": "Medium", "start": "2026-04-25", "due": "2026-05-26", "budget": 0, "contractor": "", "notes": "", "propertyId": 22 },
+      { "id": 25, "name": "Setja Tengla fyrir ryksugu", "loc": "Geymsla", "cat": "DIY / Renovations", "status": "Planned", "prio": "Medium", "start": "2026-04-26", "due": "", "budget": 0, "contractor": "", "notes": "", "propertyId": 24 },
+      { "id": 26, "name": "Wifi og Myndavélar Kjarri", "loc": "", "cat": "DIY / Renovations", "status": "In Progress", "prio": "Medium", "start": "2026-04-25", "due": "", "budget": 0, "contractor": "", "notes": "", "propertyId": 23 }
+    ],
+    "costs": [],
+    "timeLog": [
+      { "id": 17, "projectId": 16, "date": "2026-04-25", "hours": 1, "notes": "Skipuleggja" },
+      { "id": 27, "projectId": 26, "date": "2026-04-25", "hours": 8, "notes": "Lagt fyrir myndavélum og wifi, dregið í cat 5 strengin um húsið, settur upp patch skápur og rennur," }
+    ],
+    "invoices": [],
+    "quotes": [],
+    "properties": [
+      { "id": 21, "name": "Andri og Sonja", "address": "Álalind 18", "owner": "", "notes": "" },
+      { "id": 22, "name": "Heima", "address": "Björtusalir 11", "owner": "", "notes": "" },
+      { "id": 23, "name": "Kjaran og Telma", "address": "Kvistaberg 23", "owner": "", "notes": "" },
+      { "id": 24, "name": "Magga og Símin", "address": "Mávahlið 30", "owner": "", "notes": "" }
+    ]
+  };
+  nextId = 28;
   saveDB();
 }
 
@@ -1843,7 +1844,7 @@ function renderProperties() {
 }
 
 // ── Google Drive Sync ─────────────────────────────────
-const GAPI_CLIENT_ID = "14888233098-v3dii0tke83o1c565ut8prc98euqunu1.apps.googleusercontent.com"; // Replace with your OAuth client ID
+const GAPI_CLIENT_ID = "14888233098-v3dii0tke83o1c565ut8prc98euqunu1.apps.googleusercontent.com";
 const DRIVE_FILE_NAME = "home-projects-data.json";
 const SCOPES = "https://www.googleapis.com/auth/drive.file";
 
@@ -1852,9 +1853,24 @@ let gisReady = false;
 let tokenClient = null;
 let driveFileId = null;
 let autoSync = false;
+let driveConnected = false;
+
+// Load Google APIs on startup if user was previously signed in
+function initDriveOnStartup() {
+  const as = localStorage.getItem("hpt_auto_sync") === "true";
+  autoSync = as;
+  if (localStorage.getItem("hpt_drive_token")) {
+    setSyncStatus("Tengist Drive…");
+    loadGoogleAPIs();
+  } else {
+    setSyncStatus("Local only — smelltu á Drive til að tengja");
+  }
+}
 
 function loadGoogleAPIs() {
+  if (document.getElementById("gapi-script")) return;
   const s1 = document.createElement("script");
+  s1.id = "gapi-script";
   s1.src = "https://apis.google.com/js/api.js";
   s1.onload = () => gapi.load("client", initGapiClient);
   document.head.appendChild(s1);
@@ -1875,41 +1891,98 @@ function initGis() {
     client_id: GAPI_CLIENT_ID,
     scope: SCOPES,
     callback: async (resp) => {
-      if (resp.error) { showDriveMsg("Sign-in failed: " + resp.error); return; }
-      const info = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
-        headers: { Authorization: "Bearer " + gapi.client.getToken().access_token }
-      }).then(r => r.json());
-      document.getElementById("drive-user-email").textContent = info.email || "";
-      document.getElementById("drive-sign-in-section").style.display = "none";
-      document.getElementById("drive-signed-in-section").style.display = "block";
-      document.getElementById("drive-btn").textContent = "☁️ Synced";
-      setSyncStatus("Connected to Drive");
-      findDriveFile();
+      if (resp.error) {
+        setSyncStatus("Sign-in failed: " + resp.error);
+        showDriveSignedOut();
+        return;
+      }
+      await afterSignIn(true); // true = just signed in, save immediately
     }
   });
   gisReady = true;
   checkSignInStatus();
 }
 
-function checkSignInStatus() {
-  const saved = localStorage.getItem("hpt_drive_token");
-  if (saved && gapiReady) {
-    try {
-      gapi.client.setToken(JSON.parse(saved));
-      document.getElementById("drive-sign-in-section").style.display = "none";
-      document.getElementById("drive-signed-in-section").style.display = "block";
-      setSyncStatus("Drive connected");
-      findDriveFile();
-    } catch(e) {}
+async function afterSignIn(justSignedIn) {
+  try {
+    const token = gapi.client.getToken();
+    localStorage.setItem("hpt_drive_token", JSON.stringify(token));
+    driveConnected = true;
+
+    // Get email
+    let email = localStorage.getItem("hpt_drive_email") || "";
+    if (justSignedIn) {
+      try {
+        const info = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+          headers: { Authorization: "Bearer " + token.access_token }
+        }).then(r => r.json());
+        email = info.email || email;
+        localStorage.setItem("hpt_drive_email", email);
+      } catch(e) {}
+    }
+
+    showDriveSignedIn(email);
+    await findDriveFile();
+
+    if (justSignedIn) {
+      // After sign-in: if Drive file exists, load it; otherwise save current data
+      if (driveFileId) {
+        if (confirm("Gögn fundust á Drive. Vil þú hlaða þeim? (Já = sækja frá Drive, Nei = vista núverandi gögn)")) {
+          await loadFromDriveNow();
+        } else {
+          await saveToDrive();
+        }
+      } else {
+        await saveToDrive();
+      }
+    } else {
+      // Auto-reconnect on startup: always load from Drive if file exists
+      if (driveFileId) {
+        await silentLoadFromDrive();
+      }
+    }
+  } catch(e) {
+    console.error("afterSignIn error:", e);
+    setSyncStatus("Drive villa");
   }
-  const as = localStorage.getItem("hpt_auto_sync") === "true";
-  autoSync = as;
+}
+
+function showDriveSignedIn(email) {
+  const el = document.getElementById("drive-user-email");
+  if (el) el.textContent = email;
+  const si = document.getElementById("drive-sign-in-section");
+  const so = document.getElementById("drive-signed-in-section");
+  if (si) si.style.display = "none";
+  if (so) so.style.display = "block";
+  document.getElementById("drive-btn").textContent = "☁️ Drive ✓";
   const tog = document.getElementById("auto-sync-toggle");
-  if (tog) tog.checked = as;
+  if (tog) tog.checked = autoSync;
+}
+
+function showDriveSignedOut() {
+  const si = document.getElementById("drive-sign-in-section");
+  const so = document.getElementById("drive-signed-in-section");
+  if (si) si.style.display = "block";
+  if (so) so.style.display = "none";
+  document.getElementById("drive-btn").textContent = "☁️ Drive";
+}
+
+async function checkSignInStatus() {
+  if (!gapiReady || !gisReady) return;
+  const saved = localStorage.getItem("hpt_drive_token");
+  if (!saved) { setSyncStatus("Ekki tengt — smelltu á Drive"); return; }
+  try {
+    gapi.client.setToken(JSON.parse(saved));
+    // Silent token refresh
+    tokenClient.requestAccessToken({ prompt: "" });
+  } catch(e) {
+    setSyncStatus("Skráðu þig inn aftur");
+    showDriveSignedOut();
+  }
 }
 
 function handleGoogleSignIn() {
-  if (!gisReady) { alert("Google API still loading, please wait a moment."); return; }
+  if (!gisReady) { alert("Google API er að hlaðast, bíddu augnablik."); return; }
   tokenClient.requestAccessToken({ prompt: "consent" });
 }
 
@@ -1918,17 +1991,17 @@ function handleSignOut() {
   if (token) google.accounts.oauth2.revoke(token.access_token);
   gapi.client.setToken(null);
   localStorage.removeItem("hpt_drive_token");
+  localStorage.removeItem("hpt_drive_email");
   driveFileId = null;
-  document.getElementById("drive-sign-in-section").style.display = "block";
-  document.getElementById("drive-signed-in-section").style.display = "none";
-  document.getElementById("drive-btn").textContent = "☁️ Drive";
-  setSyncStatus("Not connected");
+  driveConnected = false;
+  showDriveSignedOut();
+  setSyncStatus("Ekki tengt");
 }
 
 async function findDriveFile() {
   try {
     const res = await gapi.client.drive.files.list({
-      q: 'name="home-projects-data.json" and trashed=false',
+      q: `name="${DRIVE_FILE_NAME}" and trashed=false`,
       fields: "files(id,name,modifiedTime)",
       spaces: "drive"
     });
@@ -1936,25 +2009,48 @@ async function findDriveFile() {
     if (files && files.length > 0) {
       driveFileId = files[0].id;
       const mod = new Date(files[0].modifiedTime).toLocaleString("is-IS");
-      document.getElementById("drive-file-info").textContent = "Last saved: " + mod;
+      const el = document.getElementById("drive-file-info");
+      if (el) el.textContent = "Síðast vistað: " + mod;
     } else {
-      document.getElementById("drive-file-info").textContent = "No save file found yet — click Save to create it.";
+      driveFileId = null;
+      const el = document.getElementById("drive-file-info");
+      if (el) el.textContent = "Engin skrá á Drive — smelltu á Vista til að búa til.";
     }
   } catch(e) { console.error("Drive find error:", e); }
 }
 
-async function saveToDrive() {
-  if (!gapiReady) { alert("Google API not ready."); return; }
-  setSyncStatus("Saving…");
+// Silent load on startup — no confirm dialog
+async function silentLoadFromDrive() {
+  if (!driveFileId) return;
   try {
     const token = gapi.client.getToken();
+    const res = await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}?alt=media`, {
+      headers: { Authorization: "Bearer " + token.access_token }
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    db = data;
+    if (!db.properties) db.properties = [];
+    nextId = Math.max(...[...db.projects, ...db.costs, ...db.timeLog, ...db.invoices, ...(db.quotes||[]), ...(db.properties||[])].map(x => x.id || 0), 0) + 1;
+    localStorage.setItem("hpt_db", JSON.stringify(db));
+    renderAll();
+    setSyncStatus("☁️ Samstillt · " + new Date().toLocaleTimeString("is-IS"));
+  } catch(e) { console.error("Silent load error:", e); }
+}
+
+async function saveToDrive() {
+  if (!gapiReady) { alert("Google API er ekki tilbúið."); return; }
+  setSyncStatus("Vista…");
+  try {
+    const token = gapi.client.getToken();
+    if (!token) { setSyncStatus("Ekki tengt"); return; }
     localStorage.setItem("hpt_drive_token", JSON.stringify(token));
     const content = JSON.stringify(db);
     const blob = new Blob([content], { type: "application/json" });
     const meta = { name: DRIVE_FILE_NAME, mimeType: "application/json" };
     let url, method;
     if (driveFileId) {
-      url = "https://www.googleapis.com/upload/drive/v3/files/" + driveFileId + "?uploadType=multipart";
+      url = `https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=multipart`;
       method = "PATCH";
     } else {
       url = "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart";
@@ -1963,31 +2059,24 @@ async function saveToDrive() {
     const form = new FormData();
     form.append("metadata", new Blob([JSON.stringify(meta)], { type: "application/json" }));
     form.append("file", blob);
-    const res = await fetch(url, {
-      method,
-      headers: { Authorization: "Bearer " + token.access_token },
-      body: form
-    });
+    const res = await fetch(url, { method, headers: { Authorization: "Bearer " + token.access_token }, body: form });
+    if (!res.ok) { const err = await res.text(); console.error("Save error:", err); setSyncStatus("Villa við vistun"); return; }
     const data = await res.json();
     driveFileId = data.id;
     const now = new Date().toLocaleString("is-IS");
-    document.getElementById("drive-file-info").textContent = "Last saved: " + now;
-    document.getElementById("drive-btn").textContent = "☁️ Saved ✓";
-    setSyncStatus("Saved to Drive");
-    setTimeout(() => document.getElementById("drive-btn").textContent = "☁️ Drive", 3000);
-  } catch(e) {
-    setSyncStatus("Save failed");
-    console.error(e);
-  }
+    const el = document.getElementById("drive-file-info");
+    if (el) el.textContent = "Síðast vistað: " + now;
+    document.getElementById("drive-btn").textContent = "☁️ Vistað ✓";
+    setSyncStatus("Vistað á Drive");
+    setTimeout(() => { const b = document.getElementById("drive-btn"); if(b) b.textContent = "☁️ Drive ✓"; }, 3000);
+  } catch(e) { setSyncStatus("Villa við vistun"); console.error(e); }
 }
 
-async function loadFromDrive() {
-  if (!driveFileId) { alert("No save file found in Drive."); return; }
-  if (!confirm("Load data from Google Drive? This will replace your current local data.")) return;
-  setSyncStatus("Loading…");
+async function loadFromDriveNow() {
+  if (!driveFileId) return;
   try {
     const token = gapi.client.getToken();
-    const res = await fetch("https://www.googleapis.com/drive/v3/files/" + driveFileId + "?alt=media", {
+    const res = await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}?alt=media`, {
       headers: { Authorization: "Bearer " + token.access_token }
     });
     const data = await res.json();
@@ -1996,12 +2085,16 @@ async function loadFromDrive() {
     nextId = Math.max(...[...db.projects, ...db.costs, ...db.timeLog, ...db.invoices, ...(db.quotes||[]), ...(db.properties||[])].map(x => x.id || 0), 0) + 1;
     saveDB();
     renderAll();
-    setSyncStatus("Loaded from Drive");
+    setSyncStatus("Sótt frá Drive");
     closeModal("modal-sync");
-  } catch(e) {
-    setSyncStatus("Load failed");
-    console.error(e);
-  }
+  } catch(e) { setSyncStatus("Villa við hleðslu"); console.error(e); }
+}
+
+async function loadFromDrive() {
+  if (!driveFileId) { alert("Engin skrá fannst á Drive."); return; }
+  if (!confirm("Sækja gögn frá Google Drive? Þetta yfirskrifar núverandi gögn.")) return;
+  setSyncStatus("Sæki…");
+  await loadFromDriveNow();
 }
 
 function toggleAutoSync(on) {
@@ -2024,6 +2117,8 @@ function saveDB() {
 function openSyncModal() {
   openModal("modal-sync");
   loadGoogleAPIs();
+  const email = localStorage.getItem("hpt_drive_email");
+  if (email && driveConnected) showDriveSignedIn(email);
 }
 
 // ── Export / Import backup ─────────────────────────────
@@ -2055,6 +2150,7 @@ function importData(input) {
 // ── Init ───────────────────────────────────────────────
 loadDB();
 renderAll();
+initDriveOnStartup();
 </script>
 </body>
 </html>
