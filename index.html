@@ -922,7 +922,7 @@ body {
 <div class="modal-overlay" id="modal-invoice" onclick="closeBg(event,'modal-invoice')">
   <div class="modal">
     <div class="modal-header">
-      <h3>Add Invoice Photo</h3>
+      <h3 id="modal-invoice-title">Add Invoice Photo</h3>
       <button class="modal-close" onclick="closeModal('modal-invoice')">✕</button>
     </div>
     <div class="modal-body">
@@ -945,7 +945,7 @@ body {
         <input type="number" id="if-amount" placeholder="0" min="0" step="1">
       </div>
       <div class="field">
-        <label>Invoice Photo *</label>
+        <label>Invoice Photo</label>
         <div class="upload-area" id="inv-upload-area">
           <input type="file" accept="image/*" capture="environment" id="if-photo" onchange="handleInvPhoto(this)">
           <div class="upload-icon">📸</div>
@@ -1549,8 +1549,8 @@ function renderAllInvoices() {
   list.innerHTML = db.invoices.map(inv => {
     const proj = db.projects.find(p => p.id === inv.projectId);
     return `
-    <div class="card" style="overflow:hidden;cursor:pointer" onclick="openLightbox('${inv.photo}')">
-      <img src="${inv.photo}" style="width:100%;height:140px;object-fit:cover;display:block">
+    <div class="card" style="overflow:hidden">
+      ${inv.photo ? `<img src="${inv.photo}" style="width:100%;height:140px;object-fit:cover;display:block;cursor:pointer" onclick="openLightbox('${inv.photo}')">` : `<div style="width:100%;height:80px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:32px">🧾</div>`}
       <div style="padding:10px 12px">
         <div style="font-size:12px;font-weight:500;margin-bottom:2px">${inv.vendor || 'Invoice'}</div>
         <div style="font-size:11px;color:var(--ink3)">${proj ? proj.name : '—'}</div>
@@ -1558,7 +1558,10 @@ function renderAllInvoices() {
           <span style="font-size:11px;color:var(--ink3)">${fmtDate(inv.date)}</span>
           ${inv.amount ? `<span style="font-size:12px;font-weight:600;color:var(--accent)">${fmtEuro(inv.amount)}</span>` : ''}
         </div>
-        <button class="btn sm danger" style="margin-top:8px;width:100%;justify-content:center;font-size:11px" onclick="event.stopPropagation();deleteInvoice(${inv.id})">Remove</button>
+        <div style="display:flex;gap:6px;margin-top:8px">
+          <button class="btn sm" style="flex:1;justify-content:center;font-size:11px" onclick="openInvoiceEditModal(${inv.id})">✏️ Edit</button>
+          <button class="btn sm danger" style="flex:1;justify-content:center;font-size:11px" onclick="deleteInvoice(${inv.id})">Remove</button>
+        </div>
       </div>
     </div>`;
   }).join('');
@@ -1765,13 +1768,37 @@ function deleteTime(id) {
 }
 
 // ── Invoice CRUD ───────────────────────────────────────
+let editInvoiceId = null;
+
 function openInvoiceModal(projectId) {
+  editInvoiceId = null;
   pendingInvPhoto = null;
+  document.getElementById('modal-invoice-title').textContent = 'Add Invoice Photo';
   document.getElementById('if-photo-preview').innerHTML = '';
   document.getElementById('if-vendor').value = '';
   document.getElementById('if-date').value = today();
   document.getElementById('if-amount').value = '';
   populateProjectSelect('if-project', projectId);
+  openModal('modal-invoice');
+}
+
+function openInvoiceEditModal(id) {
+  const inv = db.invoices.find(x => x.id === id);
+  if (!inv) return;
+  editInvoiceId = id;
+  pendingInvPhoto = inv.photo || null;
+  document.getElementById('modal-invoice-title').textContent = 'Edit Invoice';
+  document.getElementById('if-vendor').value = inv.vendor || '';
+  document.getElementById('if-date').value = inv.date || today();
+  document.getElementById('if-amount').value = inv.amount || '';
+  populateProjectSelect('if-project', inv.projectId);
+  // Show existing photo
+  const preview = document.getElementById('if-photo-preview');
+  if (inv.photo) {
+    preview.innerHTML = `<div class="preview-item"><img src="${inv.photo}"><button class="preview-remove" onclick="pendingInvPhoto=null;this.parentElement.remove()">✕</button></div>`;
+  } else {
+    preview.innerHTML = '';
+  }
   openModal('modal-invoice');
 }
 
@@ -1787,15 +1814,22 @@ function handleInvPhoto(input) {
 }
 
 function saveInvoice() {
-  if (!pendingInvPhoto) { alert('Please select a photo first.'); return; }
-  db.invoices.push({
-    id: newId(),
+  if (!pendingInvPhoto && !editInvoiceId) { alert('Please select a photo first.'); return; }
+  const inv = {
+    id: editInvoiceId || newId(),
     projectId: Number(document.getElementById('if-project').value),
     vendor: document.getElementById('if-vendor').value,
     date: document.getElementById('if-date').value,
     amount: Number(document.getElementById('if-amount').value) || 0,
-    photo: pendingInvPhoto,
-  });
+    photo: pendingInvPhoto || null,
+  };
+  if (editInvoiceId) {
+    const i = db.invoices.findIndex(x => x.id === editInvoiceId);
+    db.invoices[i] = inv;
+  } else {
+    db.invoices.push(inv);
+  }
+  editInvoiceId = null;
   pendingInvPhoto = null;
   saveDB(); closeModal('modal-invoice'); renderAll();
 }
