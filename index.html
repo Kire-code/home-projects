@@ -2060,7 +2060,13 @@ async function saveToDrive() {
     form.append("metadata", new Blob([JSON.stringify(meta)], { type: "application/json" }));
     form.append("file", blob);
     const res = await fetch(url, { method, headers: { Authorization: "Bearer " + token.access_token }, body: form });
-    if (!res.ok) { const err = await res.text(); console.error("Save error:", err); setSyncStatus("Villa við vistun"); return; }
+    if (!res.ok) { 
+      const err = await res.text(); 
+      console.error("Save error:", err); 
+      alert("Drive villa:\n" + err); 
+      setSyncStatus("Villa við vistun"); 
+      return; 
+    }
     const data = await res.json();
     driveFileId = data.id;
     const now = new Date().toLocaleString("is-IS");
