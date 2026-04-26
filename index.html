@@ -1706,7 +1706,7 @@ function openProjectCosts(projectId) {
       </div>
       ${budget ? `<div style="padding:10px 20px;background:var(--accent-bg);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;font-size:12px">
         <span style="color:var(--ink2)">Fjárhagsáætlun: ${fmtEuro(budget)}</span>
-        <span style="color:${total > budget ? '#c0392b' : 'var(--green)';font-weight:600">${Math.round(total/budget*100)}% notað${total > budget ? ' · YFIR FJÁRHAGSÁÆTLUN' : ''}</span>
+        <span style="color:${total > budget ? '#c0392b' : 'var(--green)'};font-weight:600">${Math.round(total/budget*100)}% notað${total > budget ? ' · YFIR FJÁRHAGSÁÆTLUN' : ''}</span>
       </div>` : ''}
       <div style="max-height:380px;overflow-y:auto">
         ${costs.map(c => `
@@ -2022,17 +2022,23 @@ async function initGapiClient() {
   checkSignInStatus();
 }
 
+let silentRefresh = false;
+
 function initGis() {
   tokenClient = google.accounts.oauth2.initTokenClient({
     client_id: GAPI_CLIENT_ID,
     scope: SCOPES,
     callback: async (resp) => {
       if (resp.error) {
-        setSyncStatus("Sign-in failed: " + resp.error);
-        showDriveSignedOut();
+        if (!silentRefresh) {
+          setSyncStatus("Sign-in failed: " + resp.error);
+          showDriveSignedOut();
+        }
+        silentRefresh = false;
         return;
       }
-      await afterSignIn(true); // true = just signed in, save immediately
+      await afterSignIn(!silentRefresh);
+      silentRefresh = false;
     }
   });
   gisReady = true;
@@ -2109,7 +2115,7 @@ async function checkSignInStatus() {
   if (!saved) { setSyncStatus("Ekki tengt — smelltu á Drive"); return; }
   try {
     gapi.client.setToken(JSON.parse(saved));
-    // Silent token refresh
+    silentRefresh = true;
     tokenClient.requestAccessToken({ prompt: "" });
   } catch(e) {
     setSyncStatus("Skráðu þig inn aftur");
@@ -2259,8 +2265,18 @@ function saveDB() {
 function openSyncModal() {
   openModal("modal-sync");
   loadGoogleAPIs();
+  // Always show correct UI based on stored token/email
   const email = localStorage.getItem("hpt_drive_email");
-  if (email && driveConnected) showDriveSignedIn(email);
+  const token = localStorage.getItem("hpt_drive_token");
+  if (email && token) {
+    showDriveSignedIn(email);
+    if (driveFileId) {
+      const el = document.getElementById("drive-file-info");
+      if (el && !el.textContent) el.textContent = "Tengt — notaðu Vista eða Sækja hér að neðan.";
+    }
+  } else {
+    showDriveSignedOut();
+  }
 }
 
 // ── Export / Import backup ─────────────────────────────
