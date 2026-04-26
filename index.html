@@ -458,18 +458,90 @@ body {
 .report-row .rr-val { font-weight: 500; color: var(--ink); }
 
 /* ── Responsive ── */
-@media (max-width: 800px) {
-  .sidebar { width: 56px; min-width: 56px; }
-  .sidebar-logo, .nav-item span, .sidebar-footer { display: none; }
-  .nav-item { justify-content: center; padding: 12px; }
-  .main { margin-left: 56px; }
-  .stats-grid { grid-template-columns: 1fr 1fr; }
+@media (max-width: 700px) {
+  /* Hide desktop sidebar */
+  .sidebar { display: none; }
+  .main { margin-left: 0; padding-bottom: 70px; }
+
+  /* Topbar */
+  .topbar { padding: 12px 16px; }
+  .page-title { font-size: 18px; }
+  .page-subtitle { display: none; }
+  .topbar .btn { padding: 7px 10px; font-size: 12px; }
+
+  /* Content */
+  .content { padding: 14px 12px; }
+
+  /* Stats */
+  .stats-grid { grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+  .stat-value { font-size: 20px; }
+  .stat-card { padding: 12px 14px; }
+
+  /* Project cards */
   .project-card-body { grid-template-columns: 1fr; }
   .pcard-section { border-right: none; border-bottom: 1px solid var(--border); }
   .pcard-section:last-child { border-bottom: none; }
-  .report-grid { grid-template-columns: 1fr; }
+  .project-card-header { flex-direction: column; gap: 10px; }
+  .project-card-header > div:last-child { display: flex; flex-wrap: wrap; gap: 6px; width: 100%; }
+  .project-card-header > div:last-child .btn { flex: 1; justify-content: center; min-width: 36px; }
+
+  /* Forms */
   .field-row, .field-row3 { grid-template-columns: 1fr; }
+  .modal { border-radius: 16px 16px 0 0; margin-top: auto; max-width: 100%; }
+  .modal-overlay { padding: 0; align-items: flex-end; }
+
+  /* Reports */
+  .report-grid { grid-template-columns: 1fr; }
+
+  /* Property breakdown table - stack on mobile */
+  #dash-property-breakdown .card > div[style*="grid-template-columns:2fr"] {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+  }
+
+  /* Bottom nav */
+  .bottom-nav {
+    display: flex !important;
+  }
 }
+
+/* Bottom navigation bar - mobile only */
+.bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: var(--ink);
+  z-index: 100;
+  height: 64px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding: 0 4px;
+  align-items: stretch;
+  justify-content: space-around;
+}
+
+.bottom-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 6px 8px;
+  cursor: pointer;
+  color: rgba(255,255,255,0.45);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  border-top: 2px solid transparent;
+  flex: 1;
+  transition: all 0.15s;
+  text-align: center;
+}
+
+.bottom-nav-item .bn-icon { font-size: 20px; line-height: 1; }
+.bottom-nav-item.active { color: #fff; border-top-color: var(--accent2); }
+.bottom-nav-item:hover { color: rgba(255,255,255,0.8); }
+
 </style>
 </head>
 <body>
@@ -641,6 +713,31 @@ body {
     </div><!-- /content -->
   </div><!-- /main -->
 </div><!-- /app -->
+
+<!-- Mobile bottom nav -->
+<nav class="bottom-nav" id="bottom-nav">
+  <div class="bottom-nav-item active" onclick="showView('dashboard')" data-view="dashboard">
+    <span class="bn-icon">🏠</span><span>Home</span>
+  </div>
+  <div class="bottom-nav-item" onclick="showView('projects')" data-view="projects">
+    <span class="bn-icon">📋</span><span>Projects</span>
+  </div>
+  <div class="bottom-nav-item" onclick="showView('costs')" data-view="costs">
+    <span class="bn-icon">💰</span><span>Costs</span>
+  </div>
+  <div class="bottom-nav-item" onclick="showView('time')" data-view="time">
+    <span class="bn-icon">⏱</span><span>Time</span>
+  </div>
+  <div class="bottom-nav-item" onclick="showView('invoices')" data-view="invoices">
+    <span class="bn-icon">🧾</span><span>Invoices</span>
+  </div>
+  <div class="bottom-nav-item" onclick="showView('quotes')" data-view="quotes">
+    <span class="bn-icon">📄</span><span>Quotes</span>
+  </div>
+  <div class="bottom-nav-item" onclick="showView('properties')" data-view="properties">
+    <span class="bn-icon">🏘</span><span>Eignir</span>
+  </div>
+</nav>
 
 <!-- ══════════════════════════════════════════
      MODALS
@@ -1134,9 +1231,13 @@ const viewMeta = {
 function showView(name) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.bottom-nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('view-' + name).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n => {
     if (n.getAttribute('onclick')?.includes("'"+name+"'")) n.classList.add('active');
+  });
+  document.querySelectorAll('.bottom-nav-item').forEach(n => {
+    if (n.getAttribute('data-view') === name) n.classList.add('active');
   });
   document.getElementById('page-title').textContent = viewMeta[name].title;
   document.getElementById('page-subtitle').textContent = viewMeta[name].sub;
