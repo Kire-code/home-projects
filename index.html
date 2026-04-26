@@ -903,6 +903,21 @@ body {
   </div>
 </div>
 
+<!-- Project Costs Modal -->
+<div class="modal-overlay" id="modal-project-costs" onclick="closeBg(event,'modal-project-costs')">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-header">
+      <h3 id="modal-costs-title">Kostnaður</h3>
+      <button class="modal-close" onclick="closeModal('modal-project-costs')">✕</button>
+    </div>
+    <div class="modal-body" id="modal-costs-body" style="padding:0"></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-project-costs')">Loka</button>
+      <button class="btn primary" id="modal-costs-add-btn">+ Bæta við kostnaði</button>
+    </div>
+  </div>
+</div>
+
 <!-- Drive Sync Modal -->
 <div class="modal-overlay" id="modal-sync" onclick="closeBg(event,'modal-sync')">
   <div class="modal">
@@ -1320,13 +1335,13 @@ function projectCardHTML(p) {
       </div>
     </div>
     <div class="project-card-body">
-      <div class="pcard-section">
-        <div class="pcard-section-label">💰 Costs</div>
+      <div class="pcard-section" style="cursor:pointer" onclick="openProjectCosts(${p.id})" title="Smelltu til að sjá kostnaðarlista">
+        <div class="pcard-section-label">💰 Costs <span style="font-size:10px;color:var(--ink3);font-weight:400">— smelltu til að sjá</span></div>
         <div class="cost-row"><span class="cost-label">Spent</span><span class="cost-val ${over ? 'over' : ''}">${fmtEuro(spent)}</span></div>
         <div class="cost-row"><span class="cost-label">Budget</span><span class="cost-val">${budget ? fmtEuro(budget) : '—'}</span></div>
         ${budget ? `<div class="progress-wrap"><div class="progress-bar"><div class="progress-fill ${fillClass}" style="width:${Math.min(pct,100)}%"></div></div><div class="progress-label">${pct}% used${over ? ' · OVER BUDGET' : ''}</div></div>` : ''}
         <div style="margin-top:8px;display:flex;gap:6px">
-          <button class="btn sm" onclick="openCostModal(${p.id})" style="font-size:11px">+ Add cost</button>
+          <button class="btn sm" onclick="event.stopPropagation();openCostModal(${p.id})" style="font-size:11px">+ Add cost</button>
         </div>
       </div>
       <div class="pcard-section">
@@ -1668,6 +1683,55 @@ function saveTime() {
 function deleteTime(id) {
   db.timeLog = db.timeLog.filter(t => t.id !== id);
   saveDB(); renderAll();
+}
+
+function openProjectCosts(projectId) {
+  const p = db.projects.find(x => x.id === projectId);
+  if (!p) return;
+  const costs = db.costs.filter(c => c.projectId === projectId).sort((a,b) => (b.date||'') > (a.date||'') ? 1 : -1);
+  const total = costs.reduce((s,c) => s + Number(c.amount||0), 0);
+  const budget = Number(p.budget||0);
+
+  document.getElementById('modal-costs-title').textContent = '💰 ' + p.name;
+  document.getElementById('modal-costs-add-btn').onclick = () => { closeModal('modal-project-costs'); openCostModal(projectId); };
+
+  const body = document.getElementById('modal-costs-body');
+  if (!costs.length) {
+    body.innerHTML = `<div class="empty-state"><div class="empty-icon">💰</div><div class="empty-title">Enginn kostnaður</div><div class="empty-text">Bættu við kostnaði hér að neðan</div></div>`;
+  } else {
+    body.innerHTML = `
+      <div style="padding:14px 20px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:13px;color:var(--ink2)">${costs.length} færslur</span>
+        <span style="font-family:'DM Serif Display',serif;font-size:20px;color:var(--accent)">${fmtEuro(total)}</span>
+      </div>
+      ${budget ? `<div style="padding:10px 20px;background:var(--accent-bg);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;font-size:12px">
+        <span style="color:var(--ink2)">Fjárhagsáætlun: ${fmtEuro(budget)}</span>
+        <span style="color:${total > budget ? '#c0392b' : 'var(--green)';font-weight:600">${Math.round(total/budget*100)}% notað${total > budget ? ' · YFIR FJÁRHAGSÁÆTLUN' : ''}</span>
+      </div>` : ''}
+      <div style="max-height:380px;overflow-y:auto">
+        ${costs.map(c => `
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid var(--border)">
+          ${c.photo ? `<div style="width:44px;height:44px;border-radius:8px;overflow:hidden;flex-shrink:0;cursor:pointer" onclick="openLightbox('${c.photo}')"><img src="${c.photo}" style="width:100%;height:100%;object-fit:cover"></div>` : `<div style="width:44px;height:44px;border-radius:8px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🧾</div>`}
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:500">${c.desc}</div>
+            <div style="font-size:11px;color:var(--ink3);margin-top:2px">${c.cat || ''} ${c.date ? '· ' + fmtDate(c.date) : ''}</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-size:14px;font-weight:600;color:var(--accent)">${fmtEuro(c.amount)}</div>
+            <button style="font-size:10px;color:var(--ink3);background:none;border:none;cursor:pointer;padding:2px 0" onclick="deleteCostFromModal(${c.id},${projectId})">✕ eyða</button>
+          </div>
+        </div>`).join('')}
+      </div>`;
+  }
+  openModal('modal-project-costs');
+}
+
+function deleteCostFromModal(costId, projectId) {
+  if (!confirm('Eyða þessum kostnaði?')) return;
+  db.costs = db.costs.filter(c => c.id !== costId);
+  saveDB();
+  renderAll();
+  openProjectCosts(projectId); // refresh modal
 }
 
 // ── Modal helpers ──────────────────────────────────────
