@@ -1056,9 +1056,7 @@ let db = {
 };
 
 let editProjectId = null;
-var pendingCostPhotos = [];
-var pendingQuotePhotos = [];
-var pendingPropertyPhotos = [];
+const photoArrays = { pendingCostPhotos: [], pendingQuotePhotos: [], pendingPropertyPhotos: [] };
 let nextId = 1;
 
 // ── Persistence ────────────────────────────────────────
@@ -1611,16 +1609,15 @@ function populateProjectSelect(elId, selectedId) {
 function handlePhotoAdd(input, previewId, arrayName) {
   if (!input.files.length) return;
   const preview = document.getElementById(previewId);
-  // Make sure array exists on window
-  if (!window[arrayName]) window[arrayName] = [];
+  if (!photoArrays[arrayName]) photoArrays[arrayName] = [];
   Array.from(input.files).forEach(file => {
     const reader = new FileReader();
     reader.onload = e => {
-      window[arrayName].push(e.target.result);
-      const idx = window[arrayName].length - 1;
+      photoArrays[arrayName].push(e.target.result);
+      const idx = photoArrays[arrayName].length - 1;
       const div = document.createElement('div');
       div.className = 'preview-item';
-      div.innerHTML = `<img src="${e.target.result}"><button class="preview-remove" onclick="window['${arrayName}'].splice(${idx},1,null);this.parentElement.remove()">✕</button>`;
+      div.innerHTML = `<img src="${e.target.result}"><button class="preview-remove" onclick="photoArrays['${arrayName}'].splice(${idx},1,null);this.parentElement.remove()">✕</button>`;
       preview.appendChild(div);
     };
     reader.readAsDataURL(file);
@@ -1629,7 +1626,7 @@ function handlePhotoAdd(input, previewId, arrayName) {
 }
 
 function openCostModal(projectId) {
-  pendingCostPhotos = [];
+  photoArrays.pendingCostPhotos = [];
   document.getElementById('cf-photo-preview').innerHTML = '';
   const t = document.getElementById('cf-photo-trigger'); if(t) t.value='';
   document.getElementById('cf-desc').value = '';
@@ -1644,7 +1641,7 @@ function saveCost() {
   const desc = document.getElementById('cf-desc').value.trim();
   const amount = document.getElementById('cf-amount').value;
   if (!desc || !amount) return;
-  const photos = pendingCostPhotos.filter(Boolean);
+  const photos = photoArrays.pendingCostPhotos.filter(Boolean);
   db.costs.push({
     id: newId(),
     projectId: Number(document.getElementById('cf-project').value),
@@ -1655,7 +1652,7 @@ function saveCost() {
     photos,
     photo: photos[0] || null,
   });
-  pendingCostPhotos = [];
+  photoArrays.pendingCostPhotos = [];
   saveDB(); closeModal('modal-cost'); renderAll();
 }
 
@@ -1756,7 +1753,7 @@ function closeLightbox() { document.getElementById('lightbox').classList.remove(
 // ── Quotes CRUD ────────────────────────────────────────
 
 function openQuoteModal(projectId) {
-  pendingQuotePhotos = [];
+  photoArrays.pendingQuotePhotos = [];
   document.getElementById('qf-photo-preview').innerHTML = '';
   const t = document.getElementById('qf-photo-trigger'); if(t) t.value='';
   document.getElementById('qf-supplier').value = '';
@@ -1775,7 +1772,7 @@ function saveQuote() {
   const amount = document.getElementById('qf-amount').value;
   if (!supplier || !amount) return;
   if (!db.quotes) db.quotes = [];
-  const photos = pendingQuotePhotos.filter(Boolean);
+  const photos = photoArrays.pendingQuotePhotos.filter(Boolean);
   db.quotes.push({
     id: newId(),
     projectId: Number(document.getElementById('qf-project').value),
@@ -1788,7 +1785,7 @@ function saveQuote() {
     photos,
     photo: photos[0] || null,
   });
-  pendingQuotePhotos = [];
+  photoArrays.pendingQuotePhotos = [];
   saveDB(); closeModal('modal-quote'); renderAll();
 }
 
@@ -1878,7 +1875,7 @@ function populatePropertyFilters() {
 
 function openPropertyModal(id) {
   editPropertyId = id || null;
-  pendingPropertyPhotos = [];
+  photoArrays.pendingPropertyPhotos = [];
   const p = (db.properties||[]).find(x => x.id === id);
   document.getElementById('modal-property-title').textContent = p ? 'Edit Property' : 'Add Property';
   document.getElementById('prop-name').value = p?.name || '';
@@ -1889,10 +1886,10 @@ function openPropertyModal(id) {
   preview.innerHTML = '';
   const existing = p?.photos || (p?.photo ? [p.photo] : []);
   existing.forEach((ph, idx) => {
-    pendingPropertyPhotos.push(ph);
+    photoArrays.pendingPropertyPhotos.push(ph);
     const div = document.createElement('div');
     div.className = 'preview-item';
-    div.innerHTML = `<img src="${ph}"><button class="preview-remove" onclick="pendingPropertyPhotos.splice(${idx},1,null);this.parentElement.remove()">✕</button>`;
+    div.innerHTML = `<img src="${ph}"><button class="preview-remove" onclick="photoArrays.pendingPropertyPhotos.splice(${idx},1,null);this.parentElement.remove()">✕</button>`;
     preview.appendChild(div);
   });
   openModal('modal-property');
@@ -1903,7 +1900,7 @@ function saveProperty() {
   const name = document.getElementById('prop-name').value.trim();
   if (!name) { document.getElementById('prop-name').focus(); return; }
   if (!db.properties) db.properties = [];
-  const photos = pendingPropertyPhotos.filter(Boolean);
+  const photos = photoArrays.pendingPropertyPhotos.filter(Boolean);
   const p = {
     id: editPropertyId || newId(),
     name,
