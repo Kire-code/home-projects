@@ -834,8 +834,8 @@ body {
       <div class="field">
         <label>Receipt / Invoice Photos</label>
         <div class="preview-grid" id="cf-photo-preview"></div>
-        <button type="button" class="btn sm" style="margin-top:6px;width:100%;justify-content:center" onclick="document.getElementById('cf-photo-trigger').click()">📷 Bæta við mynd</button>
-        <input type="file" id="cf-photo-trigger" accept="image/*" style="position:absolute;left:-9999px;opacity:0;width:1px;height:1px" multiple>
+        <label for="cf-photo-trigger" class="btn sm" style="margin-top:6px;width:100%;justify-content:center;cursor:pointer;display:flex">📷 Bæta við mynd</label>
+        <input type="file" id="cf-photo-trigger" accept="image/*" style="position:fixed;left:-9999px;top:-9999px" multiple onchange="handlePhotoAdd(this,'cf-photo-preview','pendingCostPhotos')">
       </div>
     </div>
     <div class="modal-footer">
@@ -993,8 +993,8 @@ body {
       <div class="field">
         <label>Quote Photos / Documents</label>
         <div class="preview-grid" id="qf-photo-preview"></div>
-        <button type="button" class="btn sm" style="margin-top:6px;width:100%;justify-content:center" onclick="document.getElementById('qf-photo-trigger').click()">📄 Bæta við mynd</button>
-        <input type="file" id="qf-photo-trigger" accept="image/*" style="position:absolute;left:-9999px;opacity:0;width:1px;height:1px" multiple>
+        <label for="qf-photo-trigger" class="btn sm" style="margin-top:6px;width:100%;justify-content:center;cursor:pointer;display:flex">📄 Bæta við mynd</label>
+        <input type="file" id="qf-photo-trigger" accept="image/*" style="position:fixed;left:-9999px;top:-9999px" multiple onchange="handlePhotoAdd(this,'qf-photo-preview','pendingQuotePhotos')">
       </div>
     </div>
     <div class="modal-footer">
@@ -1027,8 +1027,8 @@ body {
       <div class="field">
         <label>Myndir af húsinu</label>
         <div class="preview-grid" id="prop-photo-preview"></div>
-        <button type="button" class="btn sm" style="margin-top:6px;width:100%;justify-content:center" onclick="document.getElementById('prop-photo-trigger').click()">🏠 Bæta við mynd</button>
-        <input type="file" id="prop-photo-trigger" accept="image/*" style="position:absolute;left:-9999px;opacity:0;width:1px;height:1px" multiple>
+        <label for="prop-photo-trigger" class="btn sm" style="margin-top:6px;width:100%;justify-content:center;cursor:pointer;display:flex">🏠 Bæta við mynd</label>
+        <input type="file" id="prop-photo-trigger" accept="image/*" style="position:fixed;left:-9999px;top:-9999px" multiple onchange="handlePhotoAdd(this,'prop-photo-preview','pendingPropertyPhotos')">
       </div>
       <div class="field">
         <label>Notes</label>
