@@ -834,7 +834,8 @@ body {
       <div class="field">
         <label>Receipt / Invoice Photos</label>
         <div class="preview-grid" id="cf-photo-preview"></div>
-        <button type="button" class="btn sm" style="margin-top:6px;width:100%;justify-content:center" onclick="addPhotoInput('cf-photo-preview','pendingCostPhotos')">📷 Bæta við mynd</button>
+        <button type="button" class="btn sm" style="margin-top:6px;width:100%;justify-content:center" onclick="document.getElementById('cf-photo-trigger').click()">📷 Bæta við mynd</button>
+        <input type="file" id="cf-photo-trigger" accept="image/*" style="display:none" onchange="handlePhotoAdd(this,'cf-photo-preview','pendingCostPhotos')" multiple>
       </div>
     </div>
     <div class="modal-footer">
@@ -992,7 +993,8 @@ body {
       <div class="field">
         <label>Quote Photos / Documents</label>
         <div class="preview-grid" id="qf-photo-preview"></div>
-        <button type="button" class="btn sm" style="margin-top:6px;width:100%;justify-content:center" onclick="addPhotoInput('qf-photo-preview','pendingQuotePhotos')">📄 Bæta við mynd</button>
+        <button type="button" class="btn sm" style="margin-top:6px;width:100%;justify-content:center" onclick="document.getElementById('qf-photo-trigger').click()">📄 Bæta við mynd</button>
+        <input type="file" id="qf-photo-trigger" accept="image/*" style="display:none" onchange="handlePhotoAdd(this,'qf-photo-preview','pendingQuotePhotos')" multiple>
       </div>
     </div>
     <div class="modal-footer">
@@ -1025,7 +1027,8 @@ body {
       <div class="field">
         <label>Myndir af húsinu</label>
         <div class="preview-grid" id="prop-photo-preview"></div>
-        <button type="button" class="btn sm" style="margin-top:6px;width:100%;justify-content:center" onclick="addPhotoInput('prop-photo-preview','pendingPropertyPhotos')">🏠 Bæta við mynd</button>
+        <button type="button" class="btn sm" style="margin-top:6px;width:100%;justify-content:center" onclick="document.getElementById('prop-photo-trigger').click()">🏠 Bæta við mynd</button>
+        <input type="file" id="prop-photo-trigger" accept="image/*" style="display:none" onchange="handlePhotoAdd(this,'prop-photo-preview','pendingPropertyPhotos')" multiple>
       </div>
       <div class="field">
         <label>Notes</label>
@@ -1608,33 +1611,29 @@ function populateProjectSelect(elId, selectedId) {
 }
 
 // ── Shared photo helper ───────────────────────────────
-function addPhotoInput(previewId, arrayName) {
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = 'image/*';
-  input.style.display = 'none';
-  document.body.appendChild(input);
-  input.onchange = () => {
-    if (!input.files[0]) { document.body.removeChild(input); return; }
+function handlePhotoAdd(input, previewId, arrayName) {
+  if (!input.files.length) return;
+  const preview = document.getElementById(previewId);
+  Array.from(input.files).forEach(file => {
     const reader = new FileReader();
     reader.onload = e => {
       window[arrayName].push(e.target.result);
       const idx = window[arrayName].length - 1;
-      const preview = document.getElementById(previewId);
       const div = document.createElement('div');
       div.className = 'preview-item';
       div.innerHTML = `<img src="${e.target.result}"><button class="preview-remove" onclick="window['${arrayName}'].splice(${idx},1,null);this.parentElement.remove()">✕</button>`;
       preview.appendChild(div);
-      document.body.removeChild(input);
     };
-    reader.readAsDataURL(input.files[0]);
-  };
-  input.click();
+    reader.readAsDataURL(file);
+  });
+  // Reset so same file can be added again
+  input.value = '';
 }
 
 function openCostModal(projectId) {
   pendingCostPhotos = [];
   document.getElementById('cf-photo-preview').innerHTML = '';
+  const t = document.getElementById('cf-photo-trigger'); if(t) t.value='';
   document.getElementById('cf-desc').value = '';
   document.getElementById('cf-amount').value = '';
   document.getElementById('cf-date').value = today();
@@ -1761,6 +1760,7 @@ function closeLightbox() { document.getElementById('lightbox').classList.remove(
 function openQuoteModal(projectId) {
   pendingQuotePhotos = [];
   document.getElementById('qf-photo-preview').innerHTML = '';
+  const t = document.getElementById('qf-photo-trigger'); if(t) t.value='';
   document.getElementById('qf-supplier').value = '';
   document.getElementById('qf-amount').value = '';
   document.getElementById('qf-date').value = today();
