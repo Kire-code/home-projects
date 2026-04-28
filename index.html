@@ -835,7 +835,7 @@ body {
         <label>Receipt / Invoice Photos</label>
         <div class="preview-grid" id="cf-photo-preview"></div>
         <button type="button" class="btn sm" style="margin-top:6px;width:100%;justify-content:center" onclick="document.getElementById('cf-photo-trigger').click()">📷 Bæta við mynd</button>
-        <input type="file" id="cf-photo-trigger" accept="image/*" style="display:none" onchange="handlePhotoAdd(this,'cf-photo-preview','pendingCostPhotos')" multiple>
+        <input type="file" id="cf-photo-trigger" accept="image/*" style="position:absolute;left:-9999px;opacity:0;width:1px;height:1px" multiple>
       </div>
     </div>
     <div class="modal-footer">
@@ -994,7 +994,7 @@ body {
         <label>Quote Photos / Documents</label>
         <div class="preview-grid" id="qf-photo-preview"></div>
         <button type="button" class="btn sm" style="margin-top:6px;width:100%;justify-content:center" onclick="document.getElementById('qf-photo-trigger').click()">📄 Bæta við mynd</button>
-        <input type="file" id="qf-photo-trigger" accept="image/*" style="display:none" onchange="handlePhotoAdd(this,'qf-photo-preview','pendingQuotePhotos')" multiple>
+        <input type="file" id="qf-photo-trigger" accept="image/*" style="position:absolute;left:-9999px;opacity:0;width:1px;height:1px" multiple>
       </div>
     </div>
     <div class="modal-footer">
@@ -1028,7 +1028,7 @@ body {
         <label>Myndir af húsinu</label>
         <div class="preview-grid" id="prop-photo-preview"></div>
         <button type="button" class="btn sm" style="margin-top:6px;width:100%;justify-content:center" onclick="document.getElementById('prop-photo-trigger').click()">🏠 Bæta við mynd</button>
-        <input type="file" id="prop-photo-trigger" accept="image/*" style="display:none" onchange="handlePhotoAdd(this,'prop-photo-preview','pendingPropertyPhotos')" multiple>
+        <input type="file" id="prop-photo-trigger" accept="image/*" style="position:absolute;left:-9999px;opacity:0;width:1px;height:1px" multiple>
       </div>
       <div class="field">
         <label>Notes</label>
@@ -2300,6 +2300,22 @@ function importData(input) {
 loadDB();
 renderAll();
 initDriveOnStartup();
+
+// Wire up photo inputs via addEventListener (more reliable than onchange in Chrome)
+document.addEventListener('DOMContentLoaded', () => {});
+['cf-photo-trigger','qf-photo-trigger','prop-photo-trigger'].forEach(id => {
+  const map = {
+    'cf-photo-trigger':   { preview: 'cf-photo-preview',   arr: 'pendingCostPhotos' },
+    'qf-photo-trigger':   { preview: 'qf-photo-preview',   arr: 'pendingQuotePhotos' },
+    'prop-photo-trigger': { preview: 'prop-photo-preview', arr: 'pendingPropertyPhotos' },
+  };
+  const el = document.getElementById(id);
+  if (el) {
+    el.addEventListener('change', function() {
+      handlePhotoAdd(this, map[id].preview, map[id].arr);
+    });
+  }
+});
 </script>
 </body>
 </html>
