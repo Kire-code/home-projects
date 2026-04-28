@@ -1056,9 +1056,9 @@ let db = {
 };
 
 let editProjectId = null;
-let pendingCostPhotos = [];
-let pendingQuotePhotos = [];
-let pendingPropertyPhotos = [];
+var pendingCostPhotos = [];
+var pendingQuotePhotos = [];
+var pendingPropertyPhotos = [];
 let nextId = 1;
 
 // ── Persistence ────────────────────────────────────────
@@ -1611,6 +1611,8 @@ function populateProjectSelect(elId, selectedId) {
 function handlePhotoAdd(input, previewId, arrayName) {
   if (!input.files.length) return;
   const preview = document.getElementById(previewId);
+  // Make sure array exists on window
+  if (!window[arrayName]) window[arrayName] = [];
   Array.from(input.files).forEach(file => {
     const reader = new FileReader();
     reader.onload = e => {
@@ -1623,7 +1625,6 @@ function handlePhotoAdd(input, previewId, arrayName) {
     };
     reader.readAsDataURL(file);
   });
-  // Reset so same file can be added again
   input.value = '';
 }
 
