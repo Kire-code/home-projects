@@ -2220,6 +2220,45 @@ async function sha1(s) {
   return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, "0")).join("");
 }
 
+// Walk the object and replace anything Firestore cannot store:
+// - undefined → null
+// - NaN/Infinity → null
+// - Functions/symbols → drop
+// - Arrays of arrays → wrap inner array in a {items: [...]} object
+function sanitizeForFirestore(value, _path = "") {
+  if (value === undefined) return null;
+  if (value === null) return null;
+  const t = typeof value;
+  if (t === "number") {
+    if (Number.isNaN(value) || !Number.isFinite(value)) return null;
+    return value;
+  }
+  if (t === "string" || t === "boolean") return value;
+  if (t === "function" || t === "symbol") return null;
+  if (Array.isArray(value)) {
+    return value.map((item, i) => {
+      const s = sanitizeForFirestore(item, _path + "[" + i + "]");
+      // Firestore forbids arrays directly inside arrays.
+      if (Array.isArray(s)) {
+        console.warn("Sanitizer: wrapping nested array at", _path + "[" + i + "]");
+        return { items: s };
+      }
+      return s;
+    });
+  }
+  if (t === "object") {
+    // Plain object — recurse into keys
+    const out = {};
+    for (const k of Object.keys(value)) {
+      const sv = sanitizeForFirestore(value[k], _path + "." + k);
+      if (sv === undefined) continue;
+      out[k] = sv;
+    }
+    return out;
+  }
+  return null;
+}
+
 // Build a "cloud-shaped" copy of db: same structure, but every base64 photo
 // has been replaced with a Storage URL.
 async function dbForCloud() {
@@ -2237,7 +2276,7 @@ async function dbForCloud() {
   replaceIn(clone.quotes);
   replaceIn(clone.properties);
   await Promise.all(tasks);
-  return clone;
+  return sanitizeForFirestore(clone);
 }
 
 async function saveToCloud() {
