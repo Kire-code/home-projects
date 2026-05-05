@@ -2023,7 +2023,7 @@ const FIREBASE_CONFIG = {
 // pick something hard to guess. Everyone collaborating must use the same value.
 const HOUSEHOLD_ID = "kireheima-2026-7Kx9pQ";
 
-let fbApp = null, fbAuth = null, fbDb = null;
+let fbApp = null, fbAuth = null, fbDb = null, fbStorage = null;
 let fbUser = null;
 let fbReady = false;
 let fbUnsubscribe = null;        // listener for the household doc
@@ -2044,17 +2044,20 @@ async function loadFirebase() {
     return;
   }
   // Dynamic ESM imports from Google's CDN
-  const [{ initializeApp }, authMod, fsMod] = await Promise.all([
+  const [{ initializeApp }, authMod, fsMod, stMod] = await Promise.all([
     import("https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js"),
     import("https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js"),
-    import("https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js")
+    import("https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js"),
+    import("https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js")
   ]);
   fbApp = initializeApp(FIREBASE_CONFIG);
   fbAuth = authMod.getAuth(fbApp);
   fbDb = fsMod.getFirestore(fbApp);
+  fbStorage = stMod.getStorage(fbApp);
   // Stash the bits we need so other functions can use them
   window._fbAuthMod = authMod;
   window._fbFsMod = fsMod;
+  window._fbStMod = stMod;
   fbReady = true;
 
   authMod.onAuthStateChanged(fbAuth, (user) => {
@@ -2174,14 +2177,80 @@ function detachHouseholdListener() {
   if (fbCollabUnsubscribe) { fbCollabUnsubscribe(); fbCollabUnsubscribe = null; }
 }
 
+// ── Photo handling for cloud sync ─────────────────────
+// Photos are stored as base64 in localStorage (fast render, works offline),
+// but uploaded to Firebase Storage when syncing to the cloud (Firestore docs
+// have a 1MB limit; Storage is built for binary). The cloud doc only stores URLs.
+
+// Cache: map base64 string → uploaded download URL, so we don't re-upload
+// the same photo every save cycle.
+const photoUploadCache = new Map();
+
+function isBase64Photo(s) {
+  return typeof s === "string" && s.startsWith("data:image/");
+}
+
+function isStorageUrl(s) {
+  return typeof s === "string" && (s.startsWith("https://firebasestorage.googleapis.com/") || s.startsWith("https://storage.googleapis.com/"));
+}
+
+async function uploadPhotoIfNeeded(base64) {
+  if (!base64) return null;
+  if (isStorageUrl(base64)) return base64; // already a URL, nothing to do
+  if (!isBase64Photo(base64)) return base64; // unknown format — pass through
+  if (photoUploadCache.has(base64)) return photoUploadCache.get(base64);
+
+  const { ref, uploadString, getDownloadURL } = window._fbStMod;
+  // Generate a stable-ish filename from the base64 prefix so we don't duplicate
+  const hash = await sha1(base64);
+  // Detect mime
+  const m = base64.match(/^data:(image\/[a-z+.-]+);base64,/);
+  const ext = m ? (m[1].split("/")[1].split("+")[0]) : "jpg";
+  const path = `households/${HOUSEHOLD_ID}/photos/${hash}.${ext}`;
+  const fileRef = ref(fbStorage, path);
+  await uploadString(fileRef, base64, "data_url");
+  const url = await getDownloadURL(fileRef);
+  photoUploadCache.set(base64, url);
+  return url;
+}
+
+async function sha1(s) {
+  const buf = new TextEncoder().encode(s);
+  const hash = await crypto.subtle.digest("SHA-1", buf);
+  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+// Build a "cloud-shaped" copy of db: same structure, but every base64 photo
+// has been replaced with a Storage URL.
+async function dbForCloud() {
+  const clone = JSON.parse(JSON.stringify(db));
+  const tasks = [];
+  const replaceIn = (arr) => {
+    if (!Array.isArray(arr)) return;
+    arr.forEach((item, i) => {
+      if (item && item.photo && isBase64Photo(item.photo)) {
+        tasks.push(uploadPhotoIfNeeded(item.photo).then(url => { item.photo = url; }));
+      }
+    });
+  };
+  replaceIn(clone.costs);
+  replaceIn(clone.quotes);
+  replaceIn(clone.properties);
+  await Promise.all(tasks);
+  return clone;
+}
+
 async function saveToCloud() {
   if (!fbReady || !fbUser) return;
   const { doc, setDoc, serverTimestamp } = window._fbFsMod;
   const ref = doc(fbDb, "households", HOUSEHOLD_ID);
   try {
+    setSyncStatus("☁️ Uploading photos…");
+    const cloudDb = await dbForCloud();
+    setSyncStatus("☁️ Saving…");
     lastLocalChangeAt = Date.now();
     await setDoc(ref, {
-      payload: db,
+      payload: cloudDb,
       updatedAt: serverTimestamp(),
       updatedBy: fbUser.email || fbUser.uid
     });
