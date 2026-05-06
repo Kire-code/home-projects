@@ -749,12 +749,13 @@ body {
         </div>
         <div class="field">
           <label>Location / Room</label>
-          <input type="text" id="pf-loc" placeholder="e.g. Kitchen">
+          <select id="pf-loc" onchange="onProjectRoomChange()" style="font-family:inherit"></select>
+          <div id="pf-loc-help" style="font-size:11px;color:var(--ink3);margin-top:4px"></div>
         </div>
       </div>
       <div class="field">
         <label>Property</label>
-        <select id="pf-property">
+        <select id="pf-property" onchange="populateProjectRoomDropdown()">
           <option value="">— No property selected —</option>
         </select>
       </div>
@@ -1262,6 +1263,100 @@ function knownUserEmails() {
   // Always include the current user even if collaborator list hasn't loaded yet
   if (currentUserEmail()) set.add(currentUserEmail());
   return Array.from(set).sort();
+}
+
+// ── Rooms (per property) ──────────────────────────────
+function getPropertyRooms(propertyId) {
+  if (!propertyId) return [];
+  const prop = (db.properties||[]).find(p => p.id === propertyId);
+  if (!prop) return [];
+  return Array.isArray(prop.rooms) ? prop.rooms.slice() : [];
+}
+
+// Case-insensitive existence check
+function roomExists(propertyId, roomName) {
+  if (!propertyId || !roomName) return false;
+  const target = roomName.trim().toLowerCase();
+  return getPropertyRooms(propertyId).some(r => (r||'').toLowerCase() === target);
+}
+
+// Add a room to a property (case-insensitive duplicate guard). Returns true if added.
+function addRoomToProperty(propertyId, roomName) {
+  const trimmed = (roomName || '').trim();
+  if (!trimmed || !propertyId) return false;
+  const prop = (db.properties||[]).find(p => p.id === propertyId);
+  if (!prop) return false;
+  if (!Array.isArray(prop.rooms)) prop.rooms = [];
+  if (prop.rooms.some(r => (r||'').toLowerCase() === trimmed.toLowerCase())) return false;
+  prop.rooms.push(trimmed);
+  // Keep alphabetical
+  prop.rooms.sort((a,b) => a.localeCompare(b));
+  saveDB();
+  return true;
+}
+
+function deleteRoomFromProperty(propertyId, roomName) {
+  const prop = (db.properties||[]).find(p => p.id === propertyId);
+  if (!prop || !Array.isArray(prop.rooms)) return;
+  // Block delete if any project of this property uses this room
+  const inUse = db.projects.some(pj => pj.propertyId === propertyId
+    && (pj.loc||'').trim().toLowerCase() === roomName.trim().toLowerCase());
+  if (inUse) {
+    alert('Cannot delete "' + roomName + '" — it is used by one or more projects of this property. Reassign those projects first.');
+    return;
+  }
+  prop.rooms = prop.rooms.filter(r => (r||'').toLowerCase() !== roomName.toLowerCase());
+  saveDB();
+  renderAll();
+}
+
+// Rename a room across the property AND every project that uses it
+function renameRoomOnProperty(propertyId, oldName, newName) {
+  const trimmed = (newName || '').trim();
+  if (!trimmed) return false;
+  const prop = (db.properties||[]).find(p => p.id === propertyId);
+  if (!prop || !Array.isArray(prop.rooms)) return false;
+  const idx = prop.rooms.findIndex(r => (r||'').toLowerCase() === oldName.toLowerCase());
+  if (idx === -1) return false;
+  // Don't rename to a room that already exists
+  if (prop.rooms.some((r,i) => i !== idx && (r||'').toLowerCase() === trimmed.toLowerCase())) {
+    alert('"' + trimmed + '" already exists for this property.');
+    return false;
+  }
+  prop.rooms[idx] = trimmed;
+  prop.rooms.sort((a,b) => a.localeCompare(b));
+  // Update any projects pointing at the old name
+  db.projects.forEach(pj => {
+    if (pj.propertyId === propertyId && (pj.loc||'').toLowerCase() === oldName.toLowerCase()) {
+      pj.loc = trimmed;
+    }
+  });
+  saveDB();
+  renderAll();
+  return true;
+}
+
+// One-time migration: walk every project's `loc`, add it to its property's rooms list
+// if not already there. Idempotent — safe to call repeatedly.
+function migrateProjectLocsToRooms() {
+  let changed = false;
+  (db.projects || []).forEach(p => {
+    const room = (p.loc || '').trim();
+    if (!room || !p.propertyId) return;
+    const prop = (db.properties||[]).find(pp => pp.id === p.propertyId);
+    if (!prop) return;
+    if (!Array.isArray(prop.rooms)) prop.rooms = [];
+    if (!prop.rooms.some(r => (r||'').toLowerCase() === room.toLowerCase())) {
+      prop.rooms.push(room);
+      changed = true;
+    }
+  });
+  if (changed) {
+    (db.properties||[]).forEach(p => {
+      if (Array.isArray(p.rooms)) p.rooms.sort((a,b) => a.localeCompare(b));
+    });
+    saveDB();
+  }
 }
 
 const catClass = {
@@ -2068,7 +2163,6 @@ function openProjectModal(id) {
   const p = db.projects.find(x => x.id === id);
   document.getElementById('modal-project-title').textContent = p ? 'Edit Project' : 'New Project';
   document.getElementById('pf-name').value = p?.name || '';
-  document.getElementById('pf-loc').value = p?.loc || '';
   document.getElementById('pf-cat').value = p?.cat || 'DIY / Renovations';
   document.getElementById('pf-status').value = p?.status || 'Planned';
   document.getElementById('pf-prio').value = p?.prio || 'Medium';
@@ -2083,17 +2177,80 @@ function openProjectModal(id) {
     (db.properties||[]).map(prop =>
       `<option value="${prop.id}" ${p?.propertyId === prop.id ? 'selected' : ''}>${prop.name}${prop.address ? ' — ' + prop.address : ''}</option>`
     ).join('');
+  // Populate the room dropdown for the selected property; preselect existing loc
+  populateProjectRoomDropdown(p?.loc || '');
   openModal('modal-project');
   setTimeout(() => document.getElementById('pf-name').focus(), 80);
+}
+
+// Build the room dropdown for the currently-selected property in the modal.
+// Optionally pre-select a room (used when editing a project).
+function populateProjectRoomDropdown(preselectRoom) {
+  const sel = document.getElementById('pf-loc');
+  if (!sel) return;
+  const propId = Number(document.getElementById('pf-property').value) || null;
+  const help = document.getElementById('pf-loc-help');
+  if (!propId) {
+    sel.innerHTML = '<option value="">— Pick a property first —</option>';
+    sel.disabled = true;
+    if (help) help.textContent = 'Select a property to choose a room.';
+    return;
+  }
+  sel.disabled = false;
+  const rooms = getPropertyRooms(propId);
+  const current = (preselectRoom !== undefined) ? preselectRoom : sel.value;
+  // If current room isn't in the list (e.g. property was changed), include it temporarily
+  const allRooms = rooms.slice();
+  if (current && !allRooms.some(r => (r||'').toLowerCase() === current.toLowerCase())) {
+    allRooms.push(current);
+    allRooms.sort((a,b) => a.localeCompare(b));
+  }
+  sel.innerHTML = '<option value="">— No room —</option>' +
+    allRooms.map(r => `<option value="${r}" ${current && r.toLowerCase() === current.toLowerCase() ? 'selected' : ''}>${r}</option>`).join('') +
+    '<option value="__add_new__">+ Add new room…</option>';
+  if (help) help.textContent = rooms.length ? 'Pick a room or add a new one.' : 'No rooms yet — pick "+ Add new room…" to create one.';
+}
+
+// Triggered when the user changes the room dropdown. If they chose "+ Add new room…",
+// prompt for a name and add it to the property.
+function onProjectRoomChange() {
+  const sel = document.getElementById('pf-loc');
+  if (!sel) return;
+  if (sel.value !== '__add_new__') return;
+  const propId = Number(document.getElementById('pf-property').value) || null;
+  if (!propId) {
+    alert('Pick a property first.');
+    populateProjectRoomDropdown('');
+    return;
+  }
+  const prop = (db.properties||[]).find(p => p.id === propId);
+  const propName = prop ? prop.name : 'this property';
+  const newRoom = (prompt('Add a new room to ' + propName + ':') || '').trim();
+  if (!newRoom) {
+    populateProjectRoomDropdown('');
+    return;
+  }
+  if (roomExists(propId, newRoom)) {
+    // Already exists — just select it
+    populateProjectRoomDropdown(newRoom);
+    return;
+  }
+  if (!confirm('Add "' + newRoom + '" as a new room for ' + propName + '?')) {
+    populateProjectRoomDropdown('');
+    return;
+  }
+  addRoomToProperty(propId, newRoom);
+  populateProjectRoomDropdown(newRoom);
 }
 
 function saveProject() {
   const name = document.getElementById('pf-name').value.trim();
   if (!name) { document.getElementById('pf-name').focus(); return; }
+  const locVal = document.getElementById('pf-loc').value;
   const p = {
     id: editProjectId || newId(),
     name,
-    loc: document.getElementById('pf-loc').value,
+    loc: (locVal === '__add_new__' || !locVal) ? '' : locVal,
     cat: document.getElementById('pf-cat').value,
     status: document.getElementById('pf-status').value,
     prio: document.getElementById('pf-prio').value,
@@ -2594,6 +2751,16 @@ function renderProperties() {
     const totalSpent = db.costs
       .filter(c => db.projects.find(proj => proj.id === c.projectId && proj.propertyId === p.id))
       .reduce((s, c) => s + Number(c.amount||0), 0);
+    const rooms = getPropertyRooms(p.id);
+    const roomChips = rooms.length ? rooms.map(r => {
+      const inUse = db.projects.some(pj => pj.propertyId === p.id && (pj.loc||'').toLowerCase() === r.toLowerCase());
+      const safeRoom = r.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+      return `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;background:var(--surface2);border-radius:12px;font-size:11px;color:var(--ink2)">
+        <span>${r}</span>
+        <button onclick="renameRoomPrompt(${p.id}, '${safeRoom}')" title="Rename" style="background:none;border:none;cursor:pointer;color:var(--ink3);padding:0;font-size:11px;line-height:1">✎</button>
+        <button onclick="deleteRoomFromProperty(${p.id}, '${safeRoom}')" title="${inUse ? 'In use by a project — cannot delete' : 'Delete'}" style="background:none;border:none;cursor:${inUse ? 'not-allowed' : 'pointer'};color:${inUse ? 'var(--ink3)' : 'var(--accent)'};opacity:${inUse ? '0.4' : '1'};padding:0;font-size:11px;line-height:1">✕</button>
+      </span>`;
+    }).join(' ') : '<span style="font-size:11px;color:var(--ink3);font-style:italic">No rooms yet</span>';
     return `
     <div class="card" style="margin-bottom:12px;overflow:hidden">
       ${p.photo ? `<div style="height:140px;background:url('${p.photo}') center/cover;position:relative"><div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,0.1),rgba(0,0,0,0.5))"></div><div style="position:absolute;bottom:12px;left:16px;color:#fff;font-family:'DM Serif Display',serif;font-size:18px;text-shadow:0 1px 4px rgba(0,0,0,0.5)">${p.name}</div></div>` : ''}
@@ -2607,6 +2774,13 @@ function renderProperties() {
             ${totalSpent ? `<span>· ${fmtEuro(totalSpent)} spent</span>` : ''}
           </div>
           ${p.notes ? `<div style="font-size:12px;color:var(--ink2);margin-top:6px;font-style:italic">${p.notes}</div>` : ''}
+          <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+              <div style="font-size:11px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em">Rooms</div>
+              <button class="btn sm ghost" onclick="addRoomPrompt(${p.id})" style="font-size:11px;padding:2px 8px">+ Add room</button>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:5px">${roomChips}</div>
+          </div>
         </div>
         <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
           <button class="btn sm" onclick="openPropertyModal(${p.id})">✏️ Edit</button>
@@ -2616,6 +2790,26 @@ function renderProperties() {
       </div>
     </div>`;
   }).join('');
+}
+
+// Prompt to add a room to a property (called from property card)
+function addRoomPrompt(propertyId) {
+  const prop = (db.properties||[]).find(p => p.id === propertyId);
+  if (!prop) return;
+  const name = (prompt('Add a new room to ' + prop.name + ':') || '').trim();
+  if (!name) return;
+  if (roomExists(propertyId, name)) {
+    alert('"' + name + '" is already a room for this property.');
+    return;
+  }
+  if (addRoomToProperty(propertyId, name)) renderAll();
+}
+
+// Prompt to rename an existing room
+function renameRoomPrompt(propertyId, oldName) {
+  const newName = (prompt('Rename "' + oldName + '" to:', oldName) || '').trim();
+  if (!newName || newName === oldName) return;
+  renameRoomOnProperty(propertyId, oldName, newName);
 }
 
 // ── Firebase Cloud Sync ───────────────────────────────
@@ -2767,6 +2961,8 @@ function attachHouseholdListener() {
       renderAll();
       // Tag any legacy time entries without userEmail with the current user
       backfillTimeUserEmails();
+      // Make sure rooms are populated from any new project loc values
+      migrateProjectLocsToRooms();
       const who = data.updatedBy || "someone";
       setSyncStatus("☁️ Synced · " + new Date().toLocaleTimeString("is-IS"));
       const fi = document.getElementById("cloud-file-info");
@@ -3052,6 +3248,7 @@ function importData(input) {
 // ── Init ───────────────────────────────────────────────
 loadDB();
 backfillTimeUserEmails();
+migrateProjectLocsToRooms();
 renderAll();
 initCloudOnStartup();
 </script>
