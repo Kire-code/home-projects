@@ -873,13 +873,17 @@ body {
 <div class="modal-overlay" id="modal-time" onclick="closeBg(event,'modal-time')">
   <div class="modal">
     <div class="modal-header">
-      <h3>Log Time</h3>
+      <h3 id="modal-time-title">Log Time</h3>
       <button class="modal-close" onclick="closeModal('modal-time')">✕</button>
     </div>
     <div class="modal-body">
       <div class="field">
         <label>Project *</label>
         <select id="tf-project"></select>
+      </div>
+      <div class="field">
+        <label>Person *</label>
+        <select id="tf-user"></select>
       </div>
       <div class="field-row">
         <div class="field">
@@ -898,7 +902,7 @@ body {
     </div>
     <div class="modal-footer">
       <button class="btn" onclick="closeModal('modal-time')">Cancel</button>
-      <button class="btn primary" onclick="saveTime()">Save Time</button>
+      <button class="btn primary" onclick="saveTime()" id="tf-save-btn">Save Time</button>
     </div>
   </div>
 </div>
@@ -1156,6 +1160,64 @@ function projectHours(pid) { return db.timeLog.filter(t => t.projectId === pid).
 function projectInvoices(pid) { return db.invoices.filter(i => i.projectId === pid); }
 function projectQuotes(pid) { return (db.quotes||[]).filter(q => q.projectId === pid); }
 
+// ── User helpers (collaborators / display names / permissions) ──────
+// Current allow-list snapshot, kept up to date by the cloud listener.
+let collaboratorEmails = [];
+
+// Filter for time log views: '' = all users, otherwise an email
+let timeLogUserFilter = '';
+
+function currentUserEmail() {
+  return (fbUser && fbUser.email) ? fbUser.email.toLowerCase() : '';
+}
+
+function isSuperuser(email) {
+  return (email || '').toLowerCase() === SUPERUSER_EMAIL.toLowerCase();
+}
+
+function isCurrentUserSuperuser() {
+  return isSuperuser(currentUserEmail());
+}
+
+function userDisplayName(email) {
+  if (!email) return 'Unassigned';
+  const e = email.toLowerCase();
+  if (db.userNames && db.userNames[e]) return db.userNames[e];
+  // Default: take the part before '@' and prettify
+  const local = e.split('@')[0].replace(/[._-]/g, ' ');
+  return local.charAt(0).toUpperCase() + local.slice(1);
+}
+
+function setUserDisplayName(email, name) {
+  if (!email) return;
+  if (!db.userNames) db.userNames = {};
+  const e = email.toLowerCase();
+  const trimmed = (name || '').trim();
+  if (!trimmed) {
+    delete db.userNames[e];
+  } else {
+    db.userNames[e] = trimmed;
+  }
+  saveDB();
+}
+
+// Can the current signed-in user edit/delete this time entry?
+function canEditTimeEntry(entry) {
+  if (!entry) return false;
+  if (isCurrentUserSuperuser()) return true;
+  return (entry.userEmail || '').toLowerCase() === currentUserEmail();
+}
+
+// All known users (from collaborator list + any users referenced by time entries)
+function knownUserEmails() {
+  const set = new Set();
+  collaboratorEmails.forEach(e => e && set.add(e.toLowerCase()));
+  (db.timeLog || []).forEach(t => { if (t.userEmail) set.add(t.userEmail.toLowerCase()); });
+  // Always include the current user even if collaborator list hasn't loaded yet
+  if (currentUserEmail()) set.add(currentUserEmail());
+  return Array.from(set).sort();
+}
+
 const catClass = {
   "DIY / Renovations": "cat-diy",
   "Garden & Landscaping": "cat-garden",
@@ -1377,6 +1439,16 @@ function projectCardHTML(p) {
         <div class="pcard-section-label">⏱ Time</div>
         <div class="time-big">${fmtHrs(hrs)}</div>
         <div style="font-size:11px;color:var(--ink3);margin-top:3px">${db.timeLog.filter(t => t.projectId === p.id).length} sessions</div>
+        ${(() => {
+          const byUser = {};
+          db.timeLog.filter(t => t.projectId === p.id).forEach(t => {
+            const e = (t.userEmail || '').toLowerCase() || '__unassigned__';
+            byUser[e] = (byUser[e] || 0) + Number(t.hours || 0);
+          });
+          const keys = Object.keys(byUser);
+          if (keys.length <= 1) return '';
+          return `<div style="font-size:11px;color:var(--ink2);margin-top:6px;display:flex;flex-wrap:wrap;gap:6px">${keys.map(e => `<span style="background:var(--surface2);padding:2px 6px;border-radius:8px"><strong>${e === '__unassigned__' ? 'Unassigned' : userDisplayName(e)}:</strong> ${fmtHrs(byUser[e])}</span>`).join('')}</div>`;
+        })()}
         ${p.start || p.due ? `<div style="font-size:11px;color:var(--ink3);margin-top:6px">${p.start ? fmtDate(p.start) : '?'} → ${p.due ? fmtDate(p.due) : '?'}</div>` : ''}
         <div style="margin-top:8px">
           <button class="btn sm" onclick="openTimeModal(${p.id})" style="font-size:11px">+ Log time</button>
@@ -1473,12 +1545,44 @@ function renderAllCosts() {
 function renderAllTime() {
   const list = document.getElementById('all-time-list');
   if (!list) return;
-  if (!db.timeLog.length) {
-    list.innerHTML = `<div class="empty-state"><div class="empty-icon">⏱</div><div class="empty-title">No time logged</div><div class="empty-text">Click "+ Log Time" to record hours</div></div>`;
+
+  // Filter helpers
+  const allEntries = db.timeLog || [];
+  const filtered = timeLogUserFilter
+    ? allEntries.filter(t => (t.userEmail||'').toLowerCase() === timeLogUserFilter.toLowerCase())
+    : allEntries;
+
+  // Filter bar (always show, even if empty, so user can change filter)
+  const users = knownUserEmails();
+  const filterOptions = [`<option value=""${timeLogUserFilter==='' ? ' selected' : ''}>All people</option>`]
+    .concat(users.map(e => {
+      const sel = e === timeLogUserFilter.toLowerCase() ? ' selected' : '';
+      return `<option value="${e}"${sel}>${userDisplayName(e)}</option>`;
+    })).join('');
+
+  let filterBar = `<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+    <span style="font-size:12px;color:var(--ink2);font-weight:500">Filter by person:</span>
+    <select onchange="timeLogUserFilter=this.value;renderAll()" style="padding:6px 10px;border:1px solid var(--border2);border-radius:6px;font-size:13px;font-family:inherit;background:var(--surface)">${filterOptions}</select>
+    ${currentUserEmail() ? `<button class="btn sm" onclick="timeLogUserFilter='${currentUserEmail()}';renderAll()">Only mine</button>` : ''}
+    ${timeLogUserFilter ? `<button class="btn sm ghost" onclick="timeLogUserFilter='';renderAll()">Clear filter</button>` : ''}
+  </div>`;
+
+  if (!filtered.length) {
+    list.innerHTML = filterBar +
+      `<div class="empty-state"><div class="empty-icon">⏱</div><div class="empty-title">No time logged${timeLogUserFilter ? ' for this person' : ''}</div><div class="empty-text">${timeLogUserFilter ? 'Try a different filter, or' : ''} click "+ Log Time" to record hours</div></div>`;
     return;
   }
-  const totalHrs = db.timeLog.reduce((s,t) => s + Number(t.hours||0), 0);
-  const sorted = [...db.timeLog].sort((a,b) => (b.date||'') > (a.date||'') ? 1 : -1);
+
+  const totalHrs = filtered.reduce((s,t) => s + Number(t.hours||0), 0);
+  const sorted = [...filtered].sort((a,b) => (b.date||'') > (a.date||'') ? 1 : -1);
+
+  // Per-user totals across the (filtered) view
+  const perUser = {};
+  filtered.forEach(t => {
+    const e = (t.userEmail || '').toLowerCase() || '__unassigned__';
+    perUser[e] = (perUser[e] || 0) + Number(t.hours || 0);
+  });
+  const perUserKeys = Object.keys(perUser).sort();
 
   const grouped = {};
   sorted.forEach(t => {
@@ -1488,10 +1592,20 @@ function renderAllTime() {
     grouped[key].push(t);
   });
 
-  let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:12px 14px;background:var(--blue-bg);border-radius:8px;border:1px solid rgba(42,90,154,0.12)">
-    <span style="font-size:13px;font-weight:500;color:var(--blue)">Total hours all projects</span>
+  let html = filterBar + `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:12px 14px;background:var(--blue-bg);border-radius:8px;border:1px solid rgba(42,90,154,0.12)">
+    <span style="font-size:13px;font-weight:500;color:var(--blue)">Total hours${timeLogUserFilter ? ' (' + userDisplayName(timeLogUserFilter) + ')' : ' all projects'}</span>
     <span style="font-family:'DM Serif Display',serif;font-size:20px;color:var(--blue)">${fmtHrs(totalHrs)}</span>
   </div>`;
+
+  // Per-user breakdown (only when not already filtered to one person, and there's more than one user)
+  if (!timeLogUserFilter && perUserKeys.length > 1) {
+    html += `<div style="margin-bottom:14px;padding:10px 14px;background:var(--surface2);border-radius:8px">
+      <div class="section-label" style="margin-bottom:6px">By person</div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px">
+        ${perUserKeys.map(e => `<div style="display:flex;align-items:center;gap:6px;font-size:13px"><span style="color:var(--ink2)">${e === '__unassigned__' ? 'Unassigned' : userDisplayName(e)}:</span><span style="font-weight:600">${fmtHrs(perUser[e])}</span></div>`).join('')}
+      </div>
+    </div>`;
+  }
 
   for (const [projName, entries] of Object.entries(grouped)) {
     const subtotal = entries.reduce((s,t) => s + Number(t.hours||0), 0);
@@ -1501,14 +1615,17 @@ function renderAllTime() {
         <span style="font-size:12px;font-weight:600;color:var(--ink2)">${fmtHrs(subtotal)}</span>
       </div>
       <div class="time-entries">
-        ${entries.map(t => `
-          <div class="time-entry">
+        ${entries.map(t => {
+          const canEdit = canEditTimeEntry(t);
+          const userBadge = t.userEmail ? `<span style="font-size:10px;background:var(--surface2);color:var(--ink2);padding:2px 6px;border-radius:8px;font-weight:500;margin-right:6px">${userDisplayName(t.userEmail)}</span>` : '';
+          return `
+          <div class="time-entry" ${canEdit ? `style="cursor:pointer" onclick="openTimeModal(${t.projectId}, ${t.id})" title="Click to edit"` : ''}>
             <span class="te-date">${fmtDate(t.date)}</span>
-            <span style="flex:1;padding:0 10px;color:var(--ink2)">${t.notes || '—'}</span>
+            <span style="flex:1;padding:0 10px;color:var(--ink2)">${userBadge}${t.notes || '—'}</span>
             <span class="te-hrs">${fmtHrs(t.hours)}</span>
-            <button class="te-del" onclick="deleteTime(${t.id})">✕</button>
-          </div>
-        `).join('')}
+            ${canEdit ? `<button class="te-del" onclick="event.stopPropagation();deleteTime(${t.id})">✕</button>` : `<span class="te-del" style="opacity:0.3;cursor:not-allowed" title="Only ${userDisplayName(t.userEmail)} or admin can delete">✕</span>`}
+          </div>`;
+        }).join('')}
       </div>
     </div>`;
   }
@@ -1688,30 +1805,107 @@ function deleteCost(id) {
 }
 
 // ── Time CRUD ──────────────────────────────────────────
-function openTimeModal(projectId) {
-  document.getElementById('tf-hours').value = '';
-  document.getElementById('tf-notes').value = '';
-  document.getElementById('tf-date').value = today();
-  populateProjectSelect('tf-project', projectId);
+let editTimeId = null;
+
+function populateUserSelect(selectId, selectedEmail) {
+  const sel = document.getElementById(selectId);
+  if (!sel) return;
+  const emails = knownUserEmails();
+  const fallback = currentUserEmail();
+  const chosen = (selectedEmail || fallback || '').toLowerCase();
+  if (emails.length === 0) {
+    sel.innerHTML = `<option value="">(no users — sign in first)</option>`;
+    return;
+  }
+  sel.innerHTML = emails.map(e => {
+    const sel = e === chosen ? ' selected' : '';
+    return `<option value="${e}"${sel}>${userDisplayName(e)}</option>`;
+  }).join('');
+}
+
+function openTimeModal(projectId, timeId) {
+  editTimeId = timeId || null;
+  const existing = editTimeId ? db.timeLog.find(t => t.id === editTimeId) : null;
+
+  // If editing and the user can't edit, just bail
+  if (existing && !canEditTimeEntry(existing)) {
+    alert("Only " + userDisplayName(existing.userEmail) + " can edit this entry.");
+    editTimeId = null;
+    return;
+  }
+
+  const titleEl = document.getElementById('modal-time-title');
+  const btnEl = document.getElementById('tf-save-btn');
+  if (titleEl) titleEl.textContent = existing ? 'Edit Time Entry' : 'Log Time';
+  if (btnEl) btnEl.textContent = existing ? 'Update Entry' : 'Save Time';
+
+  document.getElementById('tf-hours').value = existing ? (existing.hours || '') : '';
+  document.getElementById('tf-notes').value = existing ? (existing.notes || '') : '';
+  document.getElementById('tf-date').value = existing ? (existing.date || today()) : today();
+  populateProjectSelect('tf-project', existing ? existing.projectId : projectId);
+  populateUserSelect('tf-user', existing ? existing.userEmail : currentUserEmail());
   openModal('modal-time');
 }
 
 function saveTime() {
   const hours = document.getElementById('tf-hours').value;
   if (!hours) return;
-  db.timeLog.push({
-    id: newId(),
-    projectId: Number(document.getElementById('tf-project').value),
-    date: document.getElementById('tf-date').value,
-    hours: Number(hours),
-    notes: document.getElementById('tf-notes').value,
-  });
+  const userEmail = (document.getElementById('tf-user').value || currentUserEmail() || '').toLowerCase();
+
+  if (editTimeId) {
+    const t = db.timeLog.find(x => x.id === editTimeId);
+    if (t) {
+      // Permission re-check
+      if (!canEditTimeEntry(t)) {
+        alert("You don't have permission to edit this entry.");
+        return;
+      }
+      t.projectId = Number(document.getElementById('tf-project').value);
+      t.date = document.getElementById('tf-date').value;
+      t.hours = Number(hours);
+      t.notes = document.getElementById('tf-notes').value;
+      // Only superuser can re-assign to another person
+      if (isCurrentUserSuperuser() || (t.userEmail||'').toLowerCase() === currentUserEmail()) {
+        t.userEmail = userEmail || t.userEmail || currentUserEmail();
+      }
+    }
+  } else {
+    db.timeLog.push({
+      id: newId(),
+      projectId: Number(document.getElementById('tf-project').value),
+      date: document.getElementById('tf-date').value,
+      hours: Number(hours),
+      notes: document.getElementById('tf-notes').value,
+      userEmail: userEmail || currentUserEmail() || '',
+    });
+  }
+  editTimeId = null;
   saveDB(); closeModal('modal-time'); renderAll();
 }
 
 function deleteTime(id) {
+  const entry = db.timeLog.find(t => t.id === id);
+  if (!entry) return;
+  if (!canEditTimeEntry(entry)) {
+    alert("Only " + userDisplayName(entry.userEmail) + " can delete this entry.");
+    return;
+  }
+  if (!confirm("Delete this time entry?")) return;
   db.timeLog = db.timeLog.filter(t => t.id !== id);
   saveDB(); renderAll();
+}
+
+// Auto-tag any time entries that don't yet have a userEmail with the
+// superuser (you). Runs after sign-in / remote sync.
+function backfillTimeUserEmails() {
+  let changed = false;
+  (db.timeLog || []).forEach(t => {
+    if (!t.userEmail) {
+      t.userEmail = SUPERUSER_EMAIL;
+      changed = true;
+    }
+  });
+  if (changed) saveDB();
 }
 
 function openProjectCosts(projectId) {
@@ -2059,6 +2253,8 @@ const FIREBASE_CONFIG = {
 // The "household" doc ID where the shared data lives. Any string is fine —
 // pick something hard to guess. Everyone collaborating must use the same value.
 const HOUSEHOLD_ID = "kireheima-2026-7Kx9pQ";
+// Superuser can edit/delete any user's time log entries.
+const SUPERUSER_EMAIL = "erik.sigrun@gmail.com";
 
 let fbApp = null, fbAuth = null, fbDb = null, fbStorage = null;
 let fbUser = null;
@@ -2102,6 +2298,9 @@ async function loadFirebase() {
     if (user) {
       showCloudSignedIn(user.email);
       attachHouseholdListener();
+      // Backfill legacy entries (no user) with the current user
+      backfillTimeUserEmails();
+      renderAll();
     } else {
       showCloudSignedOut();
       detachHouseholdListener();
@@ -2187,6 +2386,8 @@ function attachHouseholdListener() {
       ) + 1;
       try { localStorage.setItem("hpt_db", JSON.stringify(db)); } catch(e) {}
       renderAll();
+      // Tag any legacy time entries without userEmail with the current user
+      backfillTimeUserEmails();
       const who = data.updatedBy || "someone";
       setSyncStatus("☁️ Synced · " + new Date().toLocaleTimeString("is-IS"));
       const fi = document.getElementById("cloud-file-info");
@@ -2205,7 +2406,10 @@ function attachHouseholdListener() {
   if (fbCollabUnsubscribe) fbCollabUnsubscribe();
   fbCollabUnsubscribe = onSnapshot(collabRef, (snap) => {
     const list = snap.exists() ? (snap.data().collaborators || []) : [];
+    collaboratorEmails = list.map(e => (e || '').toLowerCase()).filter(Boolean);
     renderCollaborators(list);
+    // Re-render time log views since the dropdown source changed
+    if (typeof renderAll === 'function') renderAll();
   }, () => {});
 }
 
@@ -2359,12 +2563,19 @@ function renderCollaborators(list) {
     wrap.innerHTML = '<div style="font-size:12px;color:var(--ink3);font-style:italic">No collaborators yet — add an email below.</div>';
     return;
   }
-  wrap.innerHTML = list.map(email => `
-    <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--surface2);border-radius:6px;font-size:12px">
-      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${email}</span>
-      <button class="btn sm" style="padding:2px 8px" onclick="removeCollaborator('${email.replace(/'/g, "\\'")}')">✕</button>
-    </div>
-  `).join("");
+  wrap.innerHTML = list.map(email => {
+    const e = (email || '').toLowerCase();
+    const name = userDisplayName(e);
+    const safeEmail = email.replace(/'/g, "\\'");
+    return `
+    <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;background:var(--surface2);border-radius:6px;font-size:12px;flex-wrap:wrap">
+      <span style="flex:1;min-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${email}</span>
+      <input type="text" placeholder="Display name" value="${name === 'Unassigned' ? '' : name.replace(/"/g, '&quot;')}"
+        style="padding:4px 8px;border:1px solid var(--border2);border-radius:4px;font-size:12px;font-family:inherit;width:130px"
+        onblur="setUserDisplayName('${safeEmail}', this.value);renderAll()">
+      <button class="btn sm" style="padding:2px 8px" onclick="removeCollaborator('${safeEmail}')">✕</button>
+    </div>`;
+  }).join("");
 }
 
 async function addCollaborator() {
@@ -2461,6 +2672,7 @@ function importData(input) {
 
 // ── Init ───────────────────────────────────────────────
 loadDB();
+backfillTimeUserEmails();
 renderAll();
 initCloudOnStartup();
 </script>
