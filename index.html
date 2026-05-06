@@ -1598,7 +1598,8 @@ const tlogFilters = {
   to: '',             // YYYY-MM-DD
   users: [],          // array of emails (lowercase)
   projects: [],       // array of project ids (numbers)
-  properties: []      // array of property ids (numbers); 0 = "no property"
+  properties: [],     // array of property ids (numbers); 0 = "no property"
+  search: ''          // free-text search applied to description
 };
 
 function setTimeLogTab(tab) {
@@ -1638,10 +1639,12 @@ function toggleTlogFilter(key, value, evt) {
 }
 
 function clearTlogFilter(key) {
-  if (key) tlogFilters[key] = (key === 'from' || key === 'to') ? '' : [];
+  if (key === 'search') tlogFilters.search = '';
+  else if (key) tlogFilters[key] = (key === 'from' || key === 'to') ? '' : [];
   else {
     tlogFilters.from = ''; tlogFilters.to = '';
     tlogFilters.users = []; tlogFilters.projects = []; tlogFilters.properties = [];
+    tlogFilters.search = '';
   }
   renderAllTime();
 }
@@ -1653,6 +1656,7 @@ function setTlogDateRange(which, value) {
 
 // Apply all timeline filters to a list of entries
 function applyTlogFilters(entries) {
+  const q = (tlogFilters.search || '').trim().toLowerCase();
   return entries.filter(t => {
     if (tlogFilters.from && (t.date || '') < tlogFilters.from) return false;
     if (tlogFilters.to && (t.date || '') > tlogFilters.to) return false;
@@ -1663,9 +1667,57 @@ function applyTlogFilters(entries) {
       const propId = proj ? (proj.propertyId || 0) : 0;
       if (!tlogFilters.properties.includes(propId)) return false;
     }
+    if (q) {
+      const desc = (t.notes || '').toLowerCase();
+      if (!desc.includes(q)) return false;
+    }
     return true;
   });
 }
+
+// Used by the search box's oninput — preserves cursor position
+function setTlogSearch(value) {
+  tlogFilters.search = value || '';
+  // Re-render but try to restore focus on the search input
+  renderAllTime();
+  const el = document.getElementById('tlog-search-input');
+  if (el) {
+    el.focus();
+    // Move cursor to end
+    const v = el.value; el.value = ''; el.value = v;
+  }
+}
+
+// Add or remove a value from a multi-select dropdown filter
+function toggleDropdownFilter(key, value, checked) {
+  const arr = tlogFilters[key];
+  // Normalise comparison: numbers as numbers, strings as strings
+  const idx = arr.findIndex(x => String(x) === String(value));
+  if (checked) {
+    if (idx === -1) arr.push(value);
+  } else {
+    if (idx !== -1) arr.splice(idx, 1);
+  }
+  renderAllTime();
+}
+
+// Open/close a column filter dropdown panel
+function toggleFilterDropdown(id, evt) {
+  if (evt) evt.stopPropagation();
+  // Close any other open dropdowns
+  document.querySelectorAll('.tlog-dropdown-panel').forEach(p => {
+    if (p.id !== id) p.style.display = 'none';
+  });
+  const panel = document.getElementById(id);
+  if (panel) panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+}
+
+// Close all dropdowns when clicking outside
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.tlog-dropdown')) {
+    document.querySelectorAll('.tlog-dropdown-panel').forEach(p => p.style.display = 'none');
+  }
+});
 
 // Pretty date with day-of-week, e.g. "Mon, 5 May 2026"
 function fmtDateLong(iso) {
@@ -1799,54 +1851,60 @@ function renderTimeLogTimeline() {
   const filtered = applyTlogFilters(allEntries);
   const totalHrs = filtered.reduce((s,t) => s + Number(t.hours||0), 0);
 
-  // Build filter bar
   const knownUsers = knownUserEmails();
   const knownProjects = [...db.projects].sort((a,b) => (a.name||'').localeCompare(b.name||''));
   const knownProperties = [{id:0, name:'Engin eign'}].concat([...(db.properties||[])].sort((a,b)=> (a.name||'').localeCompare(b.name||'')));
 
-  const chip = (active, label, onclick, title) =>
-    `<button class="btn sm${active ? ' primary' : ' ghost'}" onclick="${onclick}" ${title ? 'title="'+title+'"' : ''} style="font-size:11px;padding:3px 9px">${label}</button>`;
+  // ── Build a column-filter dropdown (label + checkbox panel) ──
+  // items: [{value, label}, ...]
+  function dropdown(filterKey, items, label, panelId) {
+    const selected = tlogFilters[filterKey];
+    const count = selected.length;
+    const labelText = count === 0 ? 'All' : (count === 1
+      ? (items.find(i => String(i.value) === String(selected[0])) || {}).label || '1 selected'
+      : count + ' selected');
+    const checkboxes = items.map(it => {
+      const checked = selected.some(s => String(s) === String(it.value));
+      const valueAttr = typeof it.value === 'number' ? it.value : `'${String(it.value).replace(/'/g, "\\'")}'`;
+      return `<label style="display:flex;align-items:center;gap:6px;padding:4px 8px;cursor:pointer;border-radius:4px;font-size:12px;color:var(--ink2)" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+        <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleDropdownFilter('${filterKey}', ${valueAttr}, this.checked)" style="margin:0;cursor:pointer">
+        <span>${it.label}</span>
+      </label>`;
+    }).join('');
+    return `<div class="tlog-dropdown" style="position:relative;display:inline-block;margin-top:4px;font-weight:400;text-transform:none;letter-spacing:normal">
+      <button onclick="toggleFilterDropdown('${panelId}', event)" style="background:${count ? 'var(--blue-bg)' : 'var(--surface)'};border:1px solid ${count ? 'var(--blue)' : 'var(--border2)'};color:${count ? 'var(--blue)' : 'var(--ink2)'};padding:3px 8px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px;font-weight:${count ? '600' : '400'}">
+        <span>${labelText}</span>
+        <span style="font-size:9px">▼</span>
+      </button>
+      <div id="${panelId}" class="tlog-dropdown-panel" style="display:none;position:absolute;top:100%;left:0;margin-top:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.08);min-width:180px;max-height:280px;overflow-y:auto;z-index:50;padding:6px">
+        ${count ? `<div style="display:flex;justify-content:flex-end;padding:2px 6px;border-bottom:1px solid var(--border);margin-bottom:4px"><button class="btn sm ghost" onclick="event.stopPropagation();clearTlogFilter('${filterKey}')" style="font-size:10px;padding:2px 6px">Clear</button></div>` : ''}
+        ${checkboxes || `<div style="padding:6px 8px;font-size:11px;color:var(--ink3);font-style:italic">No options</div>`}
+      </div>
+    </div>`;
+  }
 
-  const userChips = knownUsers.map(e =>
-    chip(tlogFilters.users.includes(e), userDisplayName(e), `toggleTlogFilter('users','${e}',event)`, 'Click to filter, Ctrl+click to multi-select')
-  ).join('');
-  const projectChips = knownProjects.map(p =>
-    chip(tlogFilters.projects.includes(p.id), p.name, `toggleTlogFilter('projects',${p.id},event)`, 'Click to filter, Ctrl+click to multi-select')
-  ).join('');
-  const propertyChips = knownProperties.map(p =>
-    chip(tlogFilters.properties.includes(p.id), p.name, `toggleTlogFilter('properties',${p.id},event)`, 'Click to filter, Ctrl+click to multi-select')
-  ).join('');
-
-  const anyActive = tlogFilters.from || tlogFilters.to || tlogFilters.users.length || tlogFilters.projects.length || tlogFilters.properties.length;
-
-  let filterBar = `<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:14px">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
-      <span style="font-size:11px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em;width:70px">Date</span>
-      <input type="date" value="${tlogFilters.from}" onchange="setTlogDateRange('from', this.value)" style="padding:5px 8px;border:1px solid var(--border2);border-radius:6px;font-size:12px;font-family:inherit">
-      <span style="font-size:12px;color:var(--ink3)">→</span>
-      <input type="date" value="${tlogFilters.to}" onchange="setTlogDateRange('to', this.value)" style="padding:5px 8px;border:1px solid var(--border2);border-radius:6px;font-size:12px;font-family:inherit">
-      ${(tlogFilters.from||tlogFilters.to) ? `<button class="btn sm ghost" onclick="setTlogDateRange('from','');setTlogDateRange('to','')" style="font-size:11px">Clear dates</button>` : ''}
+  // ── Top bar: search box + date range + clear-all ──
+  const anyActive = tlogFilters.from || tlogFilters.to || tlogFilters.users.length || tlogFilters.projects.length || tlogFilters.properties.length || tlogFilters.search;
+  const searchVal = (tlogFilters.search || '').replace(/"/g, '&quot;');
+  const topBar = `<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+    <div style="position:relative;flex:1;min-width:220px;max-width:360px">
+      <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--ink3);pointer-events:none">🔍</span>
+      <input id="tlog-search-input" type="text" placeholder="Search descriptions..." value="${searchVal}"
+        oninput="setTlogSearch(this.value)"
+        style="width:100%;padding:7px 30px 7px 30px;border:1px solid var(--border2);border-radius:6px;font-size:13px;font-family:inherit;background:var(--surface)">
+      ${tlogFilters.search ? `<button onclick="clearTlogFilter('search')" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--ink3);cursor:pointer;font-size:14px;padding:2px 6px">✕</button>` : ''}
     </div>
-    ${knownUsers.length ? `<div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;flex-wrap:wrap">
-      <span style="font-size:11px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em;width:70px;padding-top:4px">Person</span>
-      <div style="display:flex;flex-wrap:wrap;gap:5px;flex:1">${userChips}${tlogFilters.users.length ? `<button class="btn sm ghost" onclick="clearTlogFilter('users')" style="font-size:11px;padding:3px 9px">Clear</button>` : ''}</div>
-    </div>` : ''}
-    ${knownProjects.length ? `<div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;flex-wrap:wrap">
-      <span style="font-size:11px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em;width:70px;padding-top:4px">Project</span>
-      <div style="display:flex;flex-wrap:wrap;gap:5px;flex:1">${projectChips}${tlogFilters.projects.length ? `<button class="btn sm ghost" onclick="clearTlogFilter('projects')" style="font-size:11px;padding:3px 9px">Clear</button>` : ''}</div>
-    </div>` : ''}
-    ${knownProperties.length ? `<div style="display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap">
-      <span style="font-size:11px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em;width:70px;padding-top:4px">Property</span>
-      <div style="display:flex;flex-wrap:wrap;gap:5px;flex:1">${propertyChips}${tlogFilters.properties.length ? `<button class="btn sm ghost" onclick="clearTlogFilter('properties')" style="font-size:11px;padding:3px 9px">Clear</button>` : ''}</div>
-    </div>` : ''}
-    ${anyActive ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
-      <span style="font-size:11px;color:var(--ink3)">Tip: Ctrl+click chips for multi-select · Click column headers to sort</span>
-      <button class="btn sm" onclick="clearTlogFilter()" style="font-size:11px">Clear all filters</button>
-    </div>` : `<div style="margin-top:8px;font-size:11px;color:var(--ink3)">Tip: Ctrl+click chips for multi-select · Click column headers to sort</div>`}
+    <div style="display:flex;align-items:center;gap:6px">
+      <span style="font-size:11px;color:var(--ink3)">Date:</span>
+      <input type="date" value="${tlogFilters.from}" onchange="setTlogDateRange('from', this.value)" style="padding:5px 8px;border:1px solid var(--border2);border-radius:6px;font-size:12px;font-family:inherit">
+      <span style="font-size:11px;color:var(--ink3)">→</span>
+      <input type="date" value="${tlogFilters.to}" onchange="setTlogDateRange('to', this.value)" style="padding:5px 8px;border:1px solid var(--border2);border-radius:6px;font-size:12px;font-family:inherit">
+    </div>
+    ${anyActive ? `<button class="btn sm" onclick="clearTlogFilter()" style="font-size:11px">Clear all</button>` : ''}
   </div>`;
 
   if (!filtered.length) {
-    list.innerHTML = filterBar +
+    list.innerHTML = topBar +
       `<div class="empty-state"><div class="empty-icon">⏱</div><div class="empty-title">No matching entries</div><div class="empty-text">${anyActive ? 'Try adjusting or clearing the filters above' : 'Click "+ Log Time" to record hours'}</div></div>`;
     return;
   }
@@ -1886,25 +1944,34 @@ function renderTimeLogTimeline() {
     return 0;
   });
 
-  const th = (key, label) =>
-    `<th onclick="setTlogSort('${key}')" style="cursor:pointer;text-align:left;padding:8px 10px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink3);background:var(--surface2);border-bottom:1px solid var(--border);user-select:none;white-space:nowrap">${label} ${tlogSortIcon(key)}</th>`;
+  // Header cell: clickable label for sort + (optional) filter dropdown beneath
+  const th = (key, label, filterHtml) =>
+    `<th style="text-align:left;padding:8px 10px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink3);background:var(--surface2);border-bottom:1px solid var(--border);user-select:none;white-space:nowrap;vertical-align:top">
+      <div onclick="setTlogSort('${key}')" style="cursor:pointer;display:flex;align-items:center;gap:4px">${label} ${tlogSortIcon(key)}</div>
+      ${filterHtml || ''}
+    </th>`;
 
-  let html = filterBar +
+  const propertyItems = knownProperties.map(p => ({ value: p.id, label: p.name }));
+  const projectItems = knownProjects.map(p => ({ value: p.id, label: p.name }));
+  const userItems = knownUsers.map(e => ({ value: e, label: userDisplayName(e) }));
+
+  let html = topBar +
     `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:12px 14px;background:var(--blue-bg);border-radius:8px;border:1px solid rgba(42,90,154,0.12)">
       <span style="font-size:13px;font-weight:500;color:var(--blue)">${filtered.length} ${filtered.length === 1 ? 'entry' : 'entries'} matching</span>
       <span style="font-family:'DM Serif Display',serif;font-size:20px;color:var(--blue)">${fmtHrs(totalHrs)}</span>
     </div>` +
-    `<div class="card" style="overflow:auto">
+    `<div class="card" style="overflow:visible">
+      <div style="overflow-x:auto">
       <table style="width:100%;border-collapse:collapse;font-size:13px">
         <thead>
           <tr>
-            ${th('date','Date')}
-            ${th('time','Time')}
-            ${th('property','Property')}
-            ${th('project','Project')}
-            ${th('user','User')}
-            ${th('notes','Description')}
-            ${th('hours','Hours')}
+            ${th('date','Date','')}
+            ${th('time','Time','')}
+            ${th('property','Property', dropdown('properties', propertyItems, 'Property', 'tlog-dd-property'))}
+            ${th('project','Project', dropdown('projects', projectItems, 'Project', 'tlog-dd-project'))}
+            ${th('user','User', dropdown('users', userItems, 'User', 'tlog-dd-user'))}
+            ${th('notes','Description','')}
+            ${th('hours','Hours','')}
             <th style="background:var(--surface2);border-bottom:1px solid var(--border);width:32px"></th>
           </tr>
         </thead>
@@ -1929,6 +1996,7 @@ function renderTimeLogTimeline() {
           }).join('')}
         </tbody>
       </table>
+      </div>
     </div>`;
 
   list.innerHTML = html;
