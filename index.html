@@ -665,8 +665,14 @@ body {
 
       <!-- ══ TIME VIEW ══ -->
       <div class="view" id="view-time">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-          <div class="section-label">Time Log</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px">
+          <div style="display:flex;align-items:center;gap:14px">
+            <div class="section-label">Time Log</div>
+            <div class="tlog-tabs" style="display:flex;gap:4px;background:var(--surface2);padding:3px;border-radius:8px">
+              <button id="tlog-tab-grouped" onclick="setTimeLogTab('grouped')" class="btn sm" style="font-size:12px;padding:6px 12px">Grouped</button>
+              <button id="tlog-tab-timeline" onclick="setTimeLogTab('timeline')" class="btn sm ghost" style="font-size:12px;padding:6px 12px">Timeline</button>
+            </div>
+          </div>
           <button class="btn sm primary" onclick="openTimeModal()">+ Log Time</button>
         </div>
         <div id="all-time-list"></div>
@@ -891,7 +897,15 @@ body {
           <input type="date" id="tf-date">
         </div>
         <div class="field">
-          <label>Hours Spent *</label>
+          <label>From</label>
+          <input type="time" id="tf-time-from" oninput="recalcHoursFromTimes()">
+        </div>
+        <div class="field">
+          <label>To</label>
+          <input type="time" id="tf-time-to" oninput="recalcHoursFromTimes()">
+        </div>
+        <div class="field">
+          <label>Hours *</label>
           <input type="number" id="tf-hours" placeholder="e.g. 2.5" min="0.25" step="0.25">
         </div>
       </div>
@@ -1154,6 +1168,38 @@ function fmtEuro(v) { return Number(v||0).toLocaleString('de-DE') + ' kr'; }
 function fmtHrs(h) { return Number(h||0) % 1 === 0 ? Number(h||0) + 'h' : Number(h||0).toFixed(1) + 'h'; }
 function fmtDate(d) { if (!d) return '—'; const p = d.split('-'); return p[2]+'/'+p[1]+'/'+p[0].slice(2); }
 function today() { return new Date().toISOString().split('T')[0]; }
+function nowHHMM() {
+  const d = new Date();
+  return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+}
+// Difference in hours between two HH:MM strings; handles wrap-around past midnight
+function hoursBetween(from, to) {
+  if (!from || !to) return 0;
+  const [fh, fm] = from.split(':').map(Number);
+  const [th, tm] = to.split(':').map(Number);
+  if (isNaN(fh) || isNaN(th)) return 0;
+  let diff = (th * 60 + tm) - (fh * 60 + fm);
+  if (diff < 0) diff += 24 * 60; // wrap past midnight
+  return Math.round((diff / 60) * 100) / 100;
+}
+// Pretty range like "08:00–12:00" (or just "08:00" if no end yet)
+function timeRangeStr(entry) {
+  if (!entry) return '';
+  const f = entry.timeFrom || entry.time || '';
+  const t = entry.timeTo || '';
+  if (f && t) return f + '–' + t;
+  if (f) return f;
+  return '';
+}
+// Recalculate the hours field from From/To inputs in the time modal.
+function recalcHoursFromTimes() {
+  const from = document.getElementById('tf-time-from').value;
+  const to = document.getElementById('tf-time-to').value;
+  if (from && to) {
+    const h = hoursBetween(from, to);
+    if (h > 0) document.getElementById('tf-hours').value = h;
+  }
+}
 
 function projectCosts(pid) { return db.costs.filter(c => c.projectId === pid).reduce((s,c) => s + Number(c.amount||0), 0); }
 function projectHours(pid) { return db.timeLog.filter(t => t.projectId === pid).reduce((s,t) => s + Number(t.hours||0), 0); }
@@ -1542,7 +1588,99 @@ function renderAllCosts() {
 }
 
 // ── Time view ──────────────────────────────────────────
+// ── Time Log: tabs + filters ─────────────────────────
+let timeLogTab = 'grouped'; // 'grouped' or 'timeline'
+
+// Timeline filters
+// Each filter is an array of selected values; empty = no filter
+const tlogFilters = {
+  from: '',           // YYYY-MM-DD
+  to: '',             // YYYY-MM-DD
+  users: [],          // array of emails (lowercase)
+  projects: [],       // array of project ids (numbers)
+  properties: []      // array of property ids (numbers); 0 = "no property"
+};
+
+function setTimeLogTab(tab) {
+  timeLogTab = tab;
+  // Update visual state of tab buttons
+  const g = document.getElementById('tlog-tab-grouped');
+  const t = document.getElementById('tlog-tab-timeline');
+  if (g && t) {
+    if (tab === 'grouped') {
+      g.classList.remove('ghost');
+      t.classList.add('ghost');
+    } else {
+      g.classList.add('ghost');
+      t.classList.remove('ghost');
+    }
+  }
+  renderAllTime();
+}
+
+// Toggle a value in a filter array. If shift/ctrl/meta key isn't held → single-select (replace).
+function toggleTlogFilter(key, value, evt) {
+  const arr = tlogFilters[key];
+  const isMulti = evt && (evt.ctrlKey || evt.metaKey || evt.shiftKey);
+  // Normalise value type for comparison
+  const idx = arr.findIndex(x => String(x) === String(value));
+  if (isMulti) {
+    if (idx >= 0) arr.splice(idx, 1); else arr.push(value);
+  } else {
+    // Single-select: if already the only value, clear it; else replace
+    if (idx >= 0 && arr.length === 1) {
+      tlogFilters[key] = [];
+    } else {
+      tlogFilters[key] = [value];
+    }
+  }
+  renderAllTime();
+}
+
+function clearTlogFilter(key) {
+  if (key) tlogFilters[key] = (key === 'from' || key === 'to') ? '' : [];
+  else {
+    tlogFilters.from = ''; tlogFilters.to = '';
+    tlogFilters.users = []; tlogFilters.projects = []; tlogFilters.properties = [];
+  }
+  renderAllTime();
+}
+
+function setTlogDateRange(which, value) {
+  tlogFilters[which] = value || '';
+  renderAllTime();
+}
+
+// Apply all timeline filters to a list of entries
+function applyTlogFilters(entries) {
+  return entries.filter(t => {
+    if (tlogFilters.from && (t.date || '') < tlogFilters.from) return false;
+    if (tlogFilters.to && (t.date || '') > tlogFilters.to) return false;
+    if (tlogFilters.users.length && !tlogFilters.users.includes((t.userEmail||'').toLowerCase())) return false;
+    if (tlogFilters.projects.length && !tlogFilters.projects.includes(t.projectId)) return false;
+    if (tlogFilters.properties.length) {
+      const proj = db.projects.find(p => p.id === t.projectId);
+      const propId = proj ? (proj.propertyId || 0) : 0;
+      if (!tlogFilters.properties.includes(propId)) return false;
+    }
+    return true;
+  });
+}
+
+// Pretty date with day-of-week, e.g. "Mon, 5 May 2026"
+function fmtDateLong(iso) {
+  if (!iso) return '';
+  const d = new Date(iso + 'T00:00:00');
+  if (isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString('is-IS', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+}
+
 function renderAllTime() {
+  if (timeLogTab === 'timeline') return renderTimeLogTimeline();
+  return renderTimeLogGrouped();
+}
+
+function renderTimeLogGrouped() {
   const list = document.getElementById('all-time-list');
   if (!list) return;
 
@@ -1574,7 +1712,10 @@ function renderAllTime() {
   }
 
   const totalHrs = filtered.reduce((s,t) => s + Number(t.hours||0), 0);
-  const sorted = [...filtered].sort((a,b) => (b.date||'') > (a.date||'') ? 1 : -1);
+  const sorted = [...filtered].sort((a,b) => {
+    const da = (b.date||'') + ' ' + (b.time||''); const db_ = (a.date||'') + ' ' + (a.time||'');
+    return da > db_ ? 1 : -1;
+  });
 
   // Per-user totals across the (filtered) view
   const perUser = {};
@@ -1620,7 +1761,7 @@ function renderAllTime() {
           const userBadge = t.userEmail ? `<span style="font-size:10px;background:var(--surface2);color:var(--ink2);padding:2px 6px;border-radius:8px;font-weight:500;margin-right:6px">${userDisplayName(t.userEmail)}</span>` : '';
           return `
           <div class="time-entry" ${canEdit ? `style="cursor:pointer" onclick="openTimeModal(${t.projectId}, ${t.id})" title="Click to edit"` : ''}>
-            <span class="te-date">${fmtDate(t.date)}</span>
+            <span class="te-date">${fmtDate(t.date)}${timeRangeStr(t) ? ' · ' + timeRangeStr(t) : ''}</span>
             <span style="flex:1;padding:0 10px;color:var(--ink2)">${userBadge}${t.notes || '—'}</span>
             <span class="te-hrs">${fmtHrs(t.hours)}</span>
             ${canEdit ? `<button class="te-del" onclick="event.stopPropagation();deleteTime(${t.id})">✕</button>` : `<span class="te-del" style="opacity:0.3;cursor:not-allowed" title="Only ${userDisplayName(t.userEmail)} or admin can delete">✕</span>`}
@@ -1629,6 +1770,167 @@ function renderAllTime() {
       </div>
     </div>`;
   }
+  list.innerHTML = html;
+}
+
+// Timeline view sort state — default newest-first by date+from-time
+let tlogSort = { key: 'date', dir: 'desc' };
+
+function setTlogSort(key) {
+  if (tlogSort.key === key) {
+    tlogSort.dir = tlogSort.dir === 'asc' ? 'desc' : 'asc';
+  } else {
+    tlogSort.key = key;
+    tlogSort.dir = 'asc';
+  }
+  renderAllTime();
+}
+
+function tlogSortIcon(key) {
+  if (tlogSort.key !== key) return '<span style="opacity:0.25">↕</span>';
+  return tlogSort.dir === 'asc' ? '<span style="color:var(--ink)">↑</span>' : '<span style="color:var(--ink)">↓</span>';
+}
+
+function renderTimeLogTimeline() {
+  const list = document.getElementById('all-time-list');
+  if (!list) return;
+
+  const allEntries = db.timeLog || [];
+  const filtered = applyTlogFilters(allEntries);
+  const totalHrs = filtered.reduce((s,t) => s + Number(t.hours||0), 0);
+
+  // Build filter bar
+  const knownUsers = knownUserEmails();
+  const knownProjects = [...db.projects].sort((a,b) => (a.name||'').localeCompare(b.name||''));
+  const knownProperties = [{id:0, name:'Engin eign'}].concat([...(db.properties||[])].sort((a,b)=> (a.name||'').localeCompare(b.name||'')));
+
+  const chip = (active, label, onclick, title) =>
+    `<button class="btn sm${active ? ' primary' : ' ghost'}" onclick="${onclick}" ${title ? 'title="'+title+'"' : ''} style="font-size:11px;padding:3px 9px">${label}</button>`;
+
+  const userChips = knownUsers.map(e =>
+    chip(tlogFilters.users.includes(e), userDisplayName(e), `toggleTlogFilter('users','${e}',event)`, 'Click to filter, Ctrl+click to multi-select')
+  ).join('');
+  const projectChips = knownProjects.map(p =>
+    chip(tlogFilters.projects.includes(p.id), p.name, `toggleTlogFilter('projects',${p.id},event)`, 'Click to filter, Ctrl+click to multi-select')
+  ).join('');
+  const propertyChips = knownProperties.map(p =>
+    chip(tlogFilters.properties.includes(p.id), p.name, `toggleTlogFilter('properties',${p.id},event)`, 'Click to filter, Ctrl+click to multi-select')
+  ).join('');
+
+  const anyActive = tlogFilters.from || tlogFilters.to || tlogFilters.users.length || tlogFilters.projects.length || tlogFilters.properties.length;
+
+  let filterBar = `<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:14px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+      <span style="font-size:11px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em;width:70px">Date</span>
+      <input type="date" value="${tlogFilters.from}" onchange="setTlogDateRange('from', this.value)" style="padding:5px 8px;border:1px solid var(--border2);border-radius:6px;font-size:12px;font-family:inherit">
+      <span style="font-size:12px;color:var(--ink3)">→</span>
+      <input type="date" value="${tlogFilters.to}" onchange="setTlogDateRange('to', this.value)" style="padding:5px 8px;border:1px solid var(--border2);border-radius:6px;font-size:12px;font-family:inherit">
+      ${(tlogFilters.from||tlogFilters.to) ? `<button class="btn sm ghost" onclick="setTlogDateRange('from','');setTlogDateRange('to','')" style="font-size:11px">Clear dates</button>` : ''}
+    </div>
+    ${knownUsers.length ? `<div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;flex-wrap:wrap">
+      <span style="font-size:11px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em;width:70px;padding-top:4px">Person</span>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;flex:1">${userChips}${tlogFilters.users.length ? `<button class="btn sm ghost" onclick="clearTlogFilter('users')" style="font-size:11px;padding:3px 9px">Clear</button>` : ''}</div>
+    </div>` : ''}
+    ${knownProjects.length ? `<div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;flex-wrap:wrap">
+      <span style="font-size:11px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em;width:70px;padding-top:4px">Project</span>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;flex:1">${projectChips}${tlogFilters.projects.length ? `<button class="btn sm ghost" onclick="clearTlogFilter('projects')" style="font-size:11px;padding:3px 9px">Clear</button>` : ''}</div>
+    </div>` : ''}
+    ${knownProperties.length ? `<div style="display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap">
+      <span style="font-size:11px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em;width:70px;padding-top:4px">Property</span>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;flex:1">${propertyChips}${tlogFilters.properties.length ? `<button class="btn sm ghost" onclick="clearTlogFilter('properties')" style="font-size:11px;padding:3px 9px">Clear</button>` : ''}</div>
+    </div>` : ''}
+    ${anyActive ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:11px;color:var(--ink3)">Tip: Ctrl+click chips for multi-select · Click column headers to sort</span>
+      <button class="btn sm" onclick="clearTlogFilter()" style="font-size:11px">Clear all filters</button>
+    </div>` : `<div style="margin-top:8px;font-size:11px;color:var(--ink3)">Tip: Ctrl+click chips for multi-select · Click column headers to sort</div>`}
+  </div>`;
+
+  if (!filtered.length) {
+    list.innerHTML = filterBar +
+      `<div class="empty-state"><div class="empty-icon">⏱</div><div class="empty-title">No matching entries</div><div class="empty-text">${anyActive ? 'Try adjusting or clearing the filters above' : 'Click "+ Log Time" to record hours'}</div></div>`;
+    return;
+  }
+
+  // Build a "displayable" record per entry, then sort by selected key
+  const rows = filtered.map(t => {
+    const proj = db.projects.find(p => p.id === t.projectId);
+    const prop = proj && proj.propertyId ? (db.properties||[]).find(pr => pr.id === proj.propertyId) : null;
+    return {
+      raw: t,
+      date: t.date || '',
+      timeFrom: t.timeFrom || t.time || '',
+      timeTo: t.timeTo || '',
+      property: prop ? prop.name : '',
+      project: proj ? proj.name : '',
+      user: userDisplayName(t.userEmail),
+      notes: t.notes || '',
+      hours: Number(t.hours || 0)
+    };
+  });
+
+  const dir = tlogSort.dir === 'asc' ? 1 : -1;
+  rows.sort((a, b) => {
+    let av, bv;
+    switch (tlogSort.key) {
+      case 'date':     av = a.date + ' ' + (a.timeFrom || '00:00'); bv = b.date + ' ' + (b.timeFrom || '00:00'); break;
+      case 'time':     av = a.timeFrom; bv = b.timeFrom; break;
+      case 'property': av = a.property; bv = b.property; break;
+      case 'project':  av = a.project; bv = b.project; break;
+      case 'user':     av = a.user; bv = b.user; break;
+      case 'notes':    av = a.notes; bv = b.notes; break;
+      case 'hours':    av = a.hours; bv = b.hours; break;
+      default:         av = a.date; bv = b.date;
+    }
+    if (av < bv) return -1 * dir;
+    if (av > bv) return 1 * dir;
+    return 0;
+  });
+
+  const th = (key, label) =>
+    `<th onclick="setTlogSort('${key}')" style="cursor:pointer;text-align:left;padding:8px 10px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink3);background:var(--surface2);border-bottom:1px solid var(--border);user-select:none;white-space:nowrap">${label} ${tlogSortIcon(key)}</th>`;
+
+  let html = filterBar +
+    `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:12px 14px;background:var(--blue-bg);border-radius:8px;border:1px solid rgba(42,90,154,0.12)">
+      <span style="font-size:13px;font-weight:500;color:var(--blue)">${filtered.length} ${filtered.length === 1 ? 'entry' : 'entries'} matching</span>
+      <span style="font-family:'DM Serif Display',serif;font-size:20px;color:var(--blue)">${fmtHrs(totalHrs)}</span>
+    </div>` +
+    `<div class="card" style="overflow:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead>
+          <tr>
+            ${th('date','Date')}
+            ${th('time','Time')}
+            ${th('property','Property')}
+            ${th('project','Project')}
+            ${th('user','User')}
+            ${th('notes','Description')}
+            ${th('hours','Hours')}
+            <th style="background:var(--surface2);border-bottom:1px solid var(--border);width:32px"></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(r => {
+            const t = r.raw;
+            const canEdit = canEditTimeEntry(t);
+            const range = timeRangeStr(t);
+            return `<tr ${canEdit ? `onclick="openTimeModal(${t.projectId}, ${t.id})" style="cursor:pointer" title="Click to edit"` : ''}
+              onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+              <td style="padding:8px 10px;border-bottom:1px solid var(--border);white-space:nowrap;color:var(--ink2)">${r.date ? fmtDate(r.date) : '—'}</td>
+              <td style="padding:8px 10px;border-bottom:1px solid var(--border);white-space:nowrap;font-family:monospace;font-size:12px;color:var(--ink2)">${range || '—'}</td>
+              <td style="padding:8px 10px;border-bottom:1px solid var(--border);color:var(--ink2)">${r.property || '<span style="color:var(--ink3);font-style:italic">—</span>'}</td>
+              <td style="padding:8px 10px;border-bottom:1px solid var(--border);color:var(--ink)">${r.project}</td>
+              <td style="padding:8px 10px;border-bottom:1px solid var(--border);color:var(--ink2)">${r.user}</td>
+              <td style="padding:8px 10px;border-bottom:1px solid var(--border);color:var(--ink2)">${r.notes || '<span style="color:var(--ink3);font-style:italic">—</span>'}</td>
+              <td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:right;font-weight:600;white-space:nowrap">${fmtHrs(r.hours)}</td>
+              <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right">
+                ${canEdit ? `<button class="te-del" onclick="event.stopPropagation();deleteTime(${t.id})" style="position:static">✕</button>` : `<span class="te-del" style="position:static;opacity:0.3;cursor:not-allowed" title="Only ${userDisplayName(t.userEmail)} or admin can delete">✕</span>`}
+              </td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`;
+
   list.innerHTML = html;
 }
 
@@ -1842,6 +2144,9 @@ function openTimeModal(projectId, timeId) {
   document.getElementById('tf-hours').value = existing ? (existing.hours || '') : '';
   document.getElementById('tf-notes').value = existing ? (existing.notes || '') : '';
   document.getElementById('tf-date').value = existing ? (existing.date || today()) : today();
+  // For backwards compat: existing.time may hold a single HH:MM (legacy) → put it in From
+  document.getElementById('tf-time-from').value = existing ? (existing.timeFrom || existing.time || '') : nowHHMM();
+  document.getElementById('tf-time-to').value = existing ? (existing.timeTo || '') : '';
   populateProjectSelect('tf-project', existing ? existing.projectId : projectId);
   populateUserSelect('tf-user', existing ? existing.userEmail : currentUserEmail());
   openModal('modal-time');
@@ -1862,6 +2167,10 @@ function saveTime() {
       }
       t.projectId = Number(document.getElementById('tf-project').value);
       t.date = document.getElementById('tf-date').value;
+      t.timeFrom = document.getElementById('tf-time-from').value || '';
+      t.timeTo = document.getElementById('tf-time-to').value || '';
+      // Drop the legacy single-time field if the user has now provided range fields
+      if (t.timeFrom || t.timeTo) delete t.time;
       t.hours = Number(hours);
       t.notes = document.getElementById('tf-notes').value;
       // Only superuser can re-assign to another person
@@ -1874,6 +2183,8 @@ function saveTime() {
       id: newId(),
       projectId: Number(document.getElementById('tf-project').value),
       date: document.getElementById('tf-date').value,
+      timeFrom: document.getElementById('tf-time-from').value || nowHHMM(),
+      timeTo: document.getElementById('tf-time-to').value || '',
       hours: Number(hours),
       notes: document.getElementById('tf-notes').value,
       userEmail: userEmail || currentUserEmail() || '',
