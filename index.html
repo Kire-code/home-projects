@@ -576,6 +576,9 @@ body {
       <div class="nav-item" onclick="showView('properties')">
         <span class="icon">🏘</span><span>Properties</span>
       </div>
+      <div class="nav-item" onclick="showView('rooms')">
+        <span class="icon">🚪</span><span>Rooms</span>
+      </div>
     </nav>
     <div class="sidebar-footer" id="sync-status">v1.1 · Local + Cloud</div>
   </aside>
@@ -704,6 +707,37 @@ body {
         <div id="properties-list"></div>
       </div>
 
+      <!-- ══ ROOMS OVERVIEW ══ -->
+      <div class="view" id="view-rooms">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:12px;flex-wrap:wrap">
+          <div>
+            <div class="section-label">All Rooms</div>
+            <div style="font-size:12px;color:var(--ink3);margin-top:2px">Browse rooms across all your properties</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
+          <input type="text" id="rooms-search" oninput="renderRoomsOverview()" placeholder="Search rooms…" style="flex:1;min-width:160px;font-size:13px;padding:8px 12px;border:1px solid var(--border2);border-radius:6px;background:var(--surface);color:var(--ink);font-family:'DM Sans',sans-serif">
+          <select id="rooms-filter-property" onchange="renderRoomsOverview()" style="font-size:12px;padding:8px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--surface);color:var(--ink);font-family:'DM Sans',sans-serif">
+            <option value="">All Properties</option>
+          </select>
+          <select id="rooms-filter-floor" onchange="renderRoomsOverview()" style="font-size:12px;padding:8px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--surface);color:var(--ink);font-family:'DM Sans',sans-serif">
+            <option value="">All Floors</option>
+          </select>
+          <select id="rooms-filter-activity" onchange="renderRoomsOverview()" style="font-size:12px;padding:8px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--surface);color:var(--ink);font-family:'DM Sans',sans-serif">
+            <option value="">All Rooms</option>
+            <option value="has">With projects</option>
+            <option value="active">With active projects</option>
+            <option value="empty">No projects</option>
+          </select>
+        </div>
+        <div id="rooms-list"></div>
+      </div>
+
+      <!-- ══ ROOM DETAIL ══ -->
+      <div class="view" id="view-room-detail">
+        <div id="room-detail-content"></div>
+      </div>
+
     </div><!-- /content -->
   </div><!-- /main -->
 </div><!-- /app -->
@@ -725,8 +759,8 @@ body {
   <div class="bottom-nav-item" onclick="showView('quotes')" data-view="quotes">
     <span class="bn-icon">📄</span><span>Quotes</span>
   </div>
-  <div class="bottom-nav-item" onclick="showView('properties')" data-view="properties">
-    <span class="bn-icon">🏘</span><span>Eignir</span>
+  <div class="bottom-nav-item" onclick="showView('rooms')" data-view="rooms">
+    <span class="bn-icon">🚪</span><span>Rooms</span>
   </div>
 </nav>
 
@@ -1093,6 +1127,48 @@ body {
   </div>
 </div>
 
+<!-- ── Edit Room modal ── -->
+<div class="modal-overlay" id="modal-room" onclick="closeBg(event,'modal-room')">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="rf-title">Edit Room</h3>
+      <button class="modal-close" onclick="closeModal('modal-room')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Floor</label>
+        <input type="text" id="rf-floor" placeholder="e.g. Ground floor, 1st floor, Basement">
+      </div>
+      <div class="field">
+        <label>Dimensions</label>
+        <input type="text" id="rf-dimensions" placeholder="e.g. 4.2 × 3.5 m">
+      </div>
+      <div class="field">
+        <label>Area</label>
+        <input type="text" id="rf-area" placeholder="e.g. 14.7 m²">
+      </div>
+      <div class="field">
+        <label>Photo of the room</label>
+        <div class="upload-area">
+          <input type="file" accept="image/*" id="rf-photo-input" onchange="onRoomPhotoChosen(this)">
+          <div class="upload-icon">📷</div>
+          <div class="upload-text"><strong>Tap to choose</strong> a photo</div>
+          <div class="upload-hint">JPG, PNG — saved locally</div>
+        </div>
+        <div class="preview-grid" id="rf-photo-preview"></div>
+      </div>
+      <div class="field">
+        <label>Notes</label>
+        <textarea id="rf-notes" placeholder="Wall colours, furniture, paint codes, ideas, anything…"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-room')">Cancel</button>
+      <button class="btn primary" onclick="saveRoomEdit()">Save Room</button>
+    </div>
+  </div>
+</div>
+
 <!-- Lightbox -->
 <div class="lightbox" id="lightbox" onclick="closeLightbox()">
   <button class="lightbox-close" onclick="closeLightbox()">✕</button>
@@ -1266,6 +1342,10 @@ function knownUserEmails() {
 }
 
 // ── Rooms (per property) ──────────────────────────────
+// Storage model:
+//   prop.rooms      = ['Kitchen', 'Garage', ...]            (legacy — kept in sync, used by project.loc)
+//   prop.roomsData  = { 'Kitchen': { floor, dimensions, notes, photo, photos, updatedAt }, ... }
+// Lookup keys are case-insensitive: we always look up by canonicalised name.
 function getPropertyRooms(propertyId) {
   if (!propertyId) return [];
   const prop = (db.properties||[]).find(p => p.id === propertyId);
@@ -1280,6 +1360,36 @@ function roomExists(propertyId, roomName) {
   return getPropertyRooms(propertyId).some(r => (r||'').toLowerCase() === target);
 }
 
+// Look up the metadata bucket for a room (case-insensitive). Returns {} if absent.
+function getRoomData(propertyId, roomName) {
+  const prop = (db.properties||[]).find(p => p.id === propertyId);
+  if (!prop || !roomName) return {};
+  if (!prop.roomsData || typeof prop.roomsData !== 'object') return {};
+  const target = roomName.trim().toLowerCase();
+  // Find the actual key used (preserves the user's casing)
+  for (const k of Object.keys(prop.roomsData)) {
+    if (k.toLowerCase() === target) return prop.roomsData[k] || {};
+  }
+  return {};
+}
+
+// Set / merge metadata for a room. Creates the bucket if missing.
+function setRoomData(propertyId, roomName, patch) {
+  const prop = (db.properties||[]).find(p => p.id === propertyId);
+  if (!prop || !roomName) return false;
+  if (!prop.roomsData || typeof prop.roomsData !== 'object') prop.roomsData = {};
+  const target = roomName.trim().toLowerCase();
+  // Find existing case-insensitive match, else use the trimmed name
+  let key = null;
+  for (const k of Object.keys(prop.roomsData)) {
+    if (k.toLowerCase() === target) { key = k; break; }
+  }
+  if (!key) key = roomName.trim();
+  prop.roomsData[key] = Object.assign({}, prop.roomsData[key] || {}, patch, { updatedAt: new Date().toISOString() });
+  saveDB();
+  return true;
+}
+
 // Add a room to a property (case-insensitive duplicate guard). Returns true if added.
 function addRoomToProperty(propertyId, roomName) {
   const trimmed = (roomName || '').trim();
@@ -1291,6 +1401,9 @@ function addRoomToProperty(propertyId, roomName) {
   prop.rooms.push(trimmed);
   // Keep alphabetical
   prop.rooms.sort((a,b) => a.localeCompare(b));
+  // Initialise metadata bucket
+  if (!prop.roomsData || typeof prop.roomsData !== 'object') prop.roomsData = {};
+  if (!prop.roomsData[trimmed]) prop.roomsData[trimmed] = {};
   saveDB();
   return true;
 }
@@ -1305,8 +1418,23 @@ function deleteRoomFromProperty(propertyId, roomName) {
     alert('Cannot delete "' + roomName + '" — it is used by one or more projects of this property. Reassign those projects first.');
     return;
   }
+  if (!confirm('Delete room "' + roomName + '"? Its info, photo and notes will be lost.')) return;
   prop.rooms = prop.rooms.filter(r => (r||'').toLowerCase() !== roomName.toLowerCase());
+  // Drop metadata bucket too
+  if (prop.roomsData && typeof prop.roomsData === 'object') {
+    const target = roomName.trim().toLowerCase();
+    Object.keys(prop.roomsData).forEach(k => {
+      if (k.toLowerCase() === target) delete prop.roomsData[k];
+    });
+  }
   saveDB();
+  // If we were viewing that room's detail page, bounce back to rooms overview
+  if (currentRoomCtx && currentRoomCtx.propertyId === propertyId
+      && currentRoomCtx.roomName.toLowerCase() === roomName.toLowerCase()) {
+    currentRoomCtx = null;
+    showView('rooms');
+    return;
+  }
   renderAll();
 }
 
@@ -1325,14 +1453,32 @@ function renameRoomOnProperty(propertyId, oldName, newName) {
   }
   prop.rooms[idx] = trimmed;
   prop.rooms.sort((a,b) => a.localeCompare(b));
+  // Move metadata bucket to the new key
+  if (prop.roomsData && typeof prop.roomsData === 'object') {
+    const oldKey = Object.keys(prop.roomsData).find(k => k.toLowerCase() === oldName.toLowerCase());
+    if (oldKey) {
+      const data = prop.roomsData[oldKey];
+      delete prop.roomsData[oldKey];
+      prop.roomsData[trimmed] = data;
+    }
+  }
   // Update any projects pointing at the old name
   db.projects.forEach(pj => {
     if (pj.propertyId === propertyId && (pj.loc||'').toLowerCase() === oldName.toLowerCase()) {
       pj.loc = trimmed;
     }
   });
+  // If currently viewing this room, update the ctx
+  if (currentRoomCtx && currentRoomCtx.propertyId === propertyId
+      && currentRoomCtx.roomName.toLowerCase() === oldName.toLowerCase()) {
+    currentRoomCtx.roomName = trimmed;
+  }
   saveDB();
   renderAll();
+  // Re-render the detail page if we're on it
+  if (document.getElementById('view-room-detail')?.classList.contains('active')) {
+    renderRoomDetail();
+  }
   return true;
 }
 
@@ -1350,6 +1496,16 @@ function migrateProjectLocsToRooms() {
       prop.rooms.push(room);
       changed = true;
     }
+  });
+  // Make sure every existing room has a metadata bucket
+  (db.properties||[]).forEach(p => {
+    if (!Array.isArray(p.rooms)) return;
+    if (!p.roomsData || typeof p.roomsData !== 'object') { p.roomsData = {}; changed = true; }
+    p.rooms.forEach(r => {
+      if (!r) return;
+      const exists = Object.keys(p.roomsData).some(k => k.toLowerCase() === r.toLowerCase());
+      if (!exists) { p.roomsData[r] = {}; changed = true; }
+    });
   });
   if (changed) {
     (db.properties||[]).forEach(p => {
@@ -1382,13 +1538,21 @@ const viewMeta = {
   quotes:      { title: 'Quotes', sub: 'Supplier quotes and estimates per project' },
   reports:     { title: 'Reports', sub: 'Summary by project and category' },
   properties:  { title: 'Properties', sub: 'Manage addresses and properties you work on' },
+  rooms:       { title: 'Rooms', sub: 'Browse rooms across all properties' },
+  'room-detail': { title: 'Room', sub: '' },
 };
 
-function showView(name) {
+// Holds the currently-open room on the room detail page
+// Shape: { propertyId, roomName }  or null
+let currentRoomCtx = null;
+
+function showView(name, ctx) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.querySelectorAll('.bottom-nav-item').forEach(n => n.classList.remove('active'));
-  document.getElementById('view-' + name).classList.add('active');
+  const target = document.getElementById('view-' + name);
+  if (!target) return;
+  target.classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n => {
     if (n.getAttribute('onclick')?.includes("'"+name+"'")) n.classList.add('active');
   });
@@ -1397,6 +1561,15 @@ function showView(name) {
   });
   document.getElementById('page-title').textContent = viewMeta[name].title;
   document.getElementById('page-subtitle').textContent = viewMeta[name].sub;
+
+  // Detail-view context handling
+  if (name === 'room-detail') {
+    currentRoomCtx = ctx || currentRoomCtx;
+    renderRoomDetail();
+    // Don't run renderAll — keeps the heavy renderer off the detail page
+    return;
+  }
+
   renderAll();
 }
 
@@ -1408,6 +1581,7 @@ function renderAll() {
   renderAllQuotes();
   renderReports();
   renderProperties();
+  renderRoomsOverview();
   populatePropertyFilters();
 }
 
@@ -2712,6 +2886,8 @@ function saveProperty() {
   const name = document.getElementById('prop-name').value.trim();
   if (!name) { document.getElementById('prop-name').focus(); return; }
   if (!db.properties) db.properties = [];
+  // Preserve rooms + room metadata when editing — they live on the property record
+  const existing = editPropertyId ? (db.properties.find(x => x.id === editPropertyId) || {}) : {};
   const p = {
     id: editPropertyId || newId(),
     name,
@@ -2719,6 +2895,8 @@ function saveProperty() {
     owner: document.getElementById('prop-owner').value.trim(),
     notes: document.getElementById('prop-notes').value.trim(),
     photo: pendingPropertyPhoto || null,
+    rooms: Array.isArray(existing.rooms) ? existing.rooms : [],
+    roomsData: (existing.roomsData && typeof existing.roomsData === 'object') ? existing.roomsData : {},
   };
   if (editPropertyId) {
     const i = db.properties.findIndex(x => x.id === editPropertyId);
@@ -2756,9 +2934,9 @@ function renderProperties() {
       const inUse = db.projects.some(pj => pj.propertyId === p.id && (pj.loc||'').toLowerCase() === r.toLowerCase());
       const safeRoom = r.replace(/'/g, "\\'").replace(/"/g, '&quot;');
       return `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;background:var(--surface2);border-radius:12px;font-size:11px;color:var(--ink2)">
-        <span>${r}</span>
-        <button onclick="renameRoomPrompt(${p.id}, '${safeRoom}')" title="Rename" style="background:none;border:none;cursor:pointer;color:var(--ink3);padding:0;font-size:11px;line-height:1">✎</button>
-        <button onclick="deleteRoomFromProperty(${p.id}, '${safeRoom}')" title="${inUse ? 'In use by a project — cannot delete' : 'Delete'}" style="background:none;border:none;cursor:${inUse ? 'not-allowed' : 'pointer'};color:${inUse ? 'var(--ink3)' : 'var(--accent)'};opacity:${inUse ? '0.4' : '1'};padding:0;font-size:11px;line-height:1">✕</button>
+        <a onclick="event.stopPropagation();openRoomDetail(${p.id}, '${safeRoom}')" style="cursor:pointer;color:var(--ink2);text-decoration:none;font-weight:500" title="Open room page">${r}</a>
+        <button onclick="event.stopPropagation();renameRoomPrompt(${p.id}, '${safeRoom}')" title="Rename" style="background:none;border:none;cursor:pointer;color:var(--ink3);padding:0;font-size:11px;line-height:1">✎</button>
+        <button onclick="event.stopPropagation();deleteRoomFromProperty(${p.id}, '${safeRoom}')" title="${inUse ? 'In use by a project — cannot delete' : 'Delete'}" style="background:none;border:none;cursor:${inUse ? 'not-allowed' : 'pointer'};color:${inUse ? 'var(--ink3)' : 'var(--accent)'};opacity:${inUse ? '0.4' : '1'};padding:0;font-size:11px;line-height:1">✕</button>
       </span>`;
     }).join(' ') : '<span style="font-size:11px;color:var(--ink3);font-style:italic">No rooms yet</span>';
     return `
@@ -2810,6 +2988,388 @@ function renameRoomPrompt(propertyId, oldName) {
   const newName = (prompt('Rename "' + oldName + '" to:', oldName) || '').trim();
   if (!newName || newName === oldName) return;
   renameRoomOnProperty(propertyId, oldName, newName);
+}
+
+// ══════════════════════════════════════════
+//  ROOMS — overview + detail page
+// ══════════════════════════════════════════
+
+// Open the detail page for a specific room
+function openRoomDetail(propertyId, roomName) {
+  showView('room-detail', { propertyId, roomName });
+}
+
+// Aggregated stats for a single room (projects, costs, time, quotes)
+function getRoomStats(propertyId, roomName) {
+  const target = (roomName||'').toLowerCase();
+  const projects = (db.projects||[]).filter(p => p.propertyId === propertyId
+    && (p.loc||'').toLowerCase() === target);
+  const projectIds = new Set(projects.map(p => p.id));
+  const costs = (db.costs||[]).filter(c => projectIds.has(c.projectId));
+  const time = (db.timeLog||[]).filter(t => projectIds.has(t.projectId));
+  const quotes = (db.quotes||[]).filter(q => projectIds.has(q.projectId));
+  const totalSpent = costs.reduce((s,c) => s + Number(c.amount||0), 0);
+  const totalHours = time.reduce((s,t) => s + Number(t.hours||0), 0);
+  const totalBudget = projects.reduce((s,p) => s + Number(p.budget||0), 0);
+  const activeCount = projects.filter(p => p.status === 'In Progress' || p.status === 'Planned').length;
+  const doneCount = projects.filter(p => p.status === 'Done').length;
+  return { projects, costs, time, quotes, totalSpent, totalHours, totalBudget, activeCount, doneCount };
+}
+
+function renderRoomsOverview() {
+  const list = document.getElementById('rooms-list');
+  if (!list) return;
+
+  // Build flat list of {property, roomName} pairs
+  const all = [];
+  (db.properties||[]).forEach(prop => {
+    (prop.rooms || []).forEach(r => all.push({ property: prop, roomName: r }));
+  });
+
+  // Refresh property + floor filter dropdowns
+  const propSel = document.getElementById('rooms-filter-property');
+  if (propSel) {
+    const cur = propSel.value;
+    propSel.innerHTML = '<option value="">All Properties</option>' +
+      (db.properties||[]).map(p => `<option value="${p.id}" ${String(p.id)===cur?'selected':''}>${escapeHtml(p.name)}</option>`).join('');
+  }
+  const floorSel = document.getElementById('rooms-filter-floor');
+  if (floorSel) {
+    const cur = floorSel.value;
+    const floors = Array.from(new Set(all.map(({property, roomName}) =>
+      (getRoomData(property.id, roomName).floor || '').trim()
+    ).filter(Boolean))).sort();
+    floorSel.innerHTML = '<option value="">All Floors</option>' +
+      floors.map(f => `<option value="${escapeHtml(f)}" ${f===cur?'selected':''}>${escapeHtml(f)}</option>`).join('');
+  }
+
+  if (!all.length) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">🚪</div><div class="empty-title">No rooms yet</div><div class="empty-text">Add rooms from the Properties page</div></div>`;
+    return;
+  }
+
+  // Apply filters
+  const search = (document.getElementById('rooms-search')?.value || '').trim().toLowerCase();
+  const fProp = document.getElementById('rooms-filter-property')?.value || '';
+  const fFloor = document.getElementById('rooms-filter-floor')?.value || '';
+  const fAct = document.getElementById('rooms-filter-activity')?.value || '';
+
+  const filtered = all.filter(({property, roomName}) => {
+    if (fProp && String(property.id) !== fProp) return false;
+    const data = getRoomData(property.id, roomName);
+    if (fFloor && (data.floor||'').trim() !== fFloor) return false;
+    if (search) {
+      const hay = (roomName + ' ' + property.name + ' ' + (data.notes||'')).toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    if (fAct) {
+      const stats = getRoomStats(property.id, roomName);
+      if (fAct === 'has' && stats.projects.length === 0) return false;
+      if (fAct === 'active' && stats.activeCount === 0) return false;
+      if (fAct === 'empty' && stats.projects.length > 0) return false;
+    }
+    return true;
+  });
+
+  if (!filtered.length) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">No rooms match</div><div class="empty-text">Try clearing the filters</div></div>`;
+    return;
+  }
+
+  // Group by property for visual hierarchy
+  const byProp = {};
+  filtered.forEach(item => {
+    const k = item.property.id;
+    if (!byProp[k]) byProp[k] = { property: item.property, rooms: [] };
+    byProp[k].rooms.push(item.roomName);
+  });
+
+  list.innerHTML = Object.values(byProp).map(({property, rooms}) => {
+    const cards = rooms.map(roomName => {
+      const data = getRoomData(property.id, roomName);
+      const stats = getRoomStats(property.id, roomName);
+      const safeRoom = roomName.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+      const photoBlock = data.photo
+        ? `<div style="height:90px;background:url('${data.photo}') center/cover;border-radius:6px 6px 0 0"></div>`
+        : `<div style="height:90px;background:var(--surface2);border-radius:6px 6px 0 0;display:flex;align-items:center;justify-content:center;color:var(--ink3);font-size:24px">🚪</div>`;
+      const meta = [];
+      if (data.floor) meta.push(escapeHtml(data.floor));
+      if (data.dimensions) meta.push(escapeHtml(data.dimensions));
+      return `<div class="card" style="padding:0;cursor:pointer;overflow:hidden;display:flex;flex-direction:column" onclick="openRoomDetail(${property.id}, '${safeRoom}')">
+        ${photoBlock}
+        <div style="padding:12px 14px;flex:1;display:flex;flex-direction:column;gap:6px">
+          <div style="font-weight:600;font-size:14px;color:var(--ink)">${escapeHtml(roomName)}</div>
+          ${meta.length ? `<div style="font-size:11px;color:var(--ink3)">${meta.join(' · ')}</div>` : ''}
+          <div style="display:flex;gap:8px;flex-wrap:wrap;font-size:11px;color:var(--ink3);margin-top:auto;padding-top:6px">
+            <span>${stats.projects.length} project${stats.projects.length!==1?'s':''}</span>
+            ${stats.totalSpent ? `<span>· ${fmtEuro(stats.totalSpent)}</span>` : ''}
+            ${stats.totalHours ? `<span>· ${stats.totalHours.toFixed(1)}h</span>` : ''}
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+    return `<div style="margin-bottom:24px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <div class="section-label" style="margin-bottom:0">🏘 ${escapeHtml(property.name)}</div>
+        <span style="font-size:11px;color:var(--ink3)">${rooms.length} room${rooms.length!==1?'s':''}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px">${cards}</div>
+    </div>`;
+  }).join('');
+}
+
+// Tiny HTML-escape used in the room views (avoids issues if a room is named "Mom's Room")
+function escapeHtml(s) {
+  return String(s||'').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+
+function renderRoomDetail() {
+  const host = document.getElementById('room-detail-content');
+  if (!host) return;
+  if (!currentRoomCtx) {
+    host.innerHTML = `<div class="empty-state"><div class="empty-icon">🚪</div><div class="empty-title">No room selected</div><div class="empty-text">Pick a room from the Rooms page</div><button class="btn primary" style="margin-top:12px" onclick="showView('rooms')">Browse rooms</button></div>`;
+    return;
+  }
+  const { propertyId, roomName } = currentRoomCtx;
+  const prop = (db.properties||[]).find(p => p.id === propertyId);
+  if (!prop || !roomExists(propertyId, roomName)) {
+    host.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-title">Room not found</div><div class="empty-text">It may have been deleted or renamed</div><button class="btn primary" style="margin-top:12px" onclick="showView('rooms')">Back to rooms</button></div>`;
+    return;
+  }
+
+  // Update page subtitle
+  document.getElementById('page-title').textContent = roomName;
+  document.getElementById('page-subtitle').textContent = prop.name;
+
+  const data = getRoomData(propertyId, roomName);
+  const stats = getRoomStats(propertyId, roomName);
+  const safeRoom = roomName.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+
+  // Header / hero
+  const hero = data.photo
+    ? `<div style="height:200px;background:url('${data.photo}') center/cover;border-radius:8px;position:relative;cursor:pointer" onclick="openLightbox('${data.photo}')"></div>`
+    : `<div style="height:140px;background:var(--surface2);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--ink3);font-size:48px">🚪</div>`;
+
+  // Info chips
+  const infoRows = [];
+  if (data.floor) infoRows.push(['Floor', escapeHtml(data.floor)]);
+  if (data.dimensions) infoRows.push(['Dimensions', escapeHtml(data.dimensions)]);
+  if (data.area) infoRows.push(['Area', escapeHtml(data.area)]);
+  const infoBlock = infoRows.length
+    ? `<div style="display:flex;flex-wrap:wrap;gap:16px;margin-top:12px">${infoRows.map(([k,v]) =>
+        `<div><div style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px">${k}</div><div style="font-size:13px;color:var(--ink)">${v}</div></div>`
+      ).join('')}</div>`
+    : '';
+
+  // Stat cards
+  const statCards = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-top:16px">
+      <div class="card" style="padding:12px 14px">
+        <div style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em">Projects</div>
+        <div style="font-family:'DM Serif Display',serif;font-size:22px;color:var(--ink);margin-top:2px">${stats.projects.length}</div>
+        <div style="font-size:10px;color:var(--ink3)">${stats.activeCount} active · ${stats.doneCount} done</div>
+      </div>
+      <div class="card" style="padding:12px 14px">
+        <div style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em">Spent</div>
+        <div style="font-family:'DM Serif Display',serif;font-size:22px;color:var(--accent);margin-top:2px">${fmtEuro(stats.totalSpent)}</div>
+        <div style="font-size:10px;color:var(--ink3)">${stats.totalBudget ? 'of ' + fmtEuro(stats.totalBudget) + ' budget' : 'no budget set'}</div>
+      </div>
+      <div class="card" style="padding:12px 14px">
+        <div style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em">Hours</div>
+        <div style="font-family:'DM Serif Display',serif;font-size:22px;color:var(--ink);margin-top:2px">${stats.totalHours.toFixed(1)}h</div>
+        <div style="font-size:10px;color:var(--ink3)">${stats.time.length} session${stats.time.length!==1?'s':''}</div>
+      </div>
+      <div class="card" style="padding:12px 14px">
+        <div style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em">Quotes</div>
+        <div style="font-family:'DM Serif Display',serif;font-size:22px;color:var(--ink);margin-top:2px">${stats.quotes.length}</div>
+        <div style="font-size:10px;color:var(--ink3)">${stats.quotes.filter(q => q.accepted).length} accepted</div>
+      </div>
+    </div>`;
+
+  // Projects list (in this room)
+  const projectsBlock = stats.projects.length
+    ? stats.projects.map(p => {
+        const spent = stats.costs.filter(c => c.projectId === p.id).reduce((s,c) => s + Number(c.amount||0), 0);
+        const hrs = stats.time.filter(t => t.projectId === p.id).reduce((s,t) => s + Number(t.hours||0), 0);
+        const statusColor = p.status === 'Done' ? '#27ae60' : (p.status === 'In Progress' ? 'var(--accent)' : 'var(--ink3)');
+        return `<div class="card" style="padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <div style="flex:1;min-width:160px">
+            <div style="font-weight:600;font-size:14px;margin-bottom:2px">${escapeHtml(p.name)}</div>
+            <div style="font-size:11px;color:var(--ink3)">
+              <span style="color:${statusColor};font-weight:500">● ${p.status||'—'}</span>
+              ${p.cat ? ' · ' + escapeHtml(p.cat) : ''}
+              ${p.due ? ' · due ' + fmtDate(p.due) : ''}
+            </div>
+          </div>
+          <div style="font-size:12px;color:var(--ink2);text-align:right">
+            <div>${fmtEuro(spent)}${p.budget ? ' / ' + fmtEuro(p.budget) : ''}</div>
+            <div style="font-size:11px;color:var(--ink3)">${hrs.toFixed(1)}h</div>
+          </div>
+        </div>`;
+      }).join('')
+    : `<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:12px 0">No projects assigned to this room yet.</div>`;
+
+  // Recent costs
+  const costsSorted = stats.costs.slice().sort((a,b) => (b.date||'') > (a.date||'') ? 1 : -1).slice(0, 8);
+  const costsBlock = costsSorted.length
+    ? costsSorted.map(c => {
+        const proj = db.projects.find(p => p.id === c.projectId);
+        return `<div class="cost-entry">
+          ${c.photo ? `<div style="width:32px;height:32px;border-radius:4px;overflow:hidden;margin-right:8px;flex-shrink:0;cursor:pointer" onclick="openLightbox('${c.photo}')"><img src="${c.photo}" style="width:100%;height:100%;object-fit:cover"></div>` : ''}
+          <span class="ce-label">${escapeHtml(c.desc||'')} <span style="font-size:10px;color:var(--ink3)">${proj ? escapeHtml(proj.name) : ''}</span></span>
+          <span class="ce-date">${fmtDate(c.date)}</span>
+          <span class="ce-amount">${fmtEuro(c.amount)}</span>
+        </div>`;
+      }).join('')
+    : `<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:12px 0">No costs logged in this room yet.</div>`;
+
+  // Recent time entries
+  const timeSorted = stats.time.slice().sort((a,b) => (b.date||'') > (a.date||'') ? 1 : -1).slice(0, 8);
+  const timeBlock = timeSorted.length
+    ? timeSorted.map(t => {
+        const proj = db.projects.find(p => p.id === t.projectId);
+        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--surface2);border-radius:6px;margin-bottom:4px;font-size:12px">
+          <div style="flex:1;min-width:0">
+            <div style="color:var(--ink);font-weight:500">${escapeHtml(t.person||'Someone')}</div>
+            <div style="color:var(--ink3);font-size:11px">${proj ? escapeHtml(proj.name) : ''} ${t.note ? '· ' + escapeHtml(t.note) : ''}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="color:var(--ink2)">${Number(t.hours||0).toFixed(1)}h</div>
+            <div style="color:var(--ink3);font-size:11px">${fmtDate(t.date)}</div>
+          </div>
+        </div>`;
+      }).join('')
+    : `<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:12px 0">No time logged in this room yet.</div>`;
+
+  // Notes block
+  const notesBlock = data.notes
+    ? `<div style="white-space:pre-wrap;font-size:13px;color:var(--ink2);line-height:1.5">${escapeHtml(data.notes)}</div>`
+    : `<div style="font-size:13px;color:var(--ink3);font-style:italic">No notes yet — tap Edit to add some.</div>`;
+
+  host.innerHTML = `
+    <div style="margin-bottom:12px">
+      <button class="btn sm ghost" onclick="showView('rooms')" style="font-size:12px">← All rooms</button>
+    </div>
+    ${hero}
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-top:16px;flex-wrap:wrap">
+      <div style="flex:1;min-width:200px">
+        <div style="font-family:'DM Serif Display',serif;font-size:24px;color:var(--ink);line-height:1.2">${escapeHtml(roomName)}</div>
+        <div style="font-size:13px;color:var(--ink3);margin-top:2px">in ${escapeHtml(prop.name)}${prop.address ? ' · ' + escapeHtml(prop.address) : ''}</div>
+        ${infoBlock}
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn sm" onclick="openRoomEditModal(${propertyId}, '${safeRoom}')">✏️ Edit</button>
+        <button class="btn sm ghost" onclick="renameRoomPrompt(${propertyId}, '${safeRoom}')">Rename</button>
+      </div>
+    </div>
+
+    ${statCards}
+
+    <div style="margin-top:24px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div class="section-label" style="margin-bottom:0">Notes</div>
+      </div>
+      <div class="card" style="padding:14px 16px">${notesBlock}</div>
+    </div>
+
+    <div style="margin-top:24px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div class="section-label" style="margin-bottom:0">Projects in this room</div>
+        <button class="btn sm ghost" onclick="prefillProjectForRoom(${propertyId}, '${safeRoom}')" style="font-size:11px">+ New project here</button>
+      </div>
+      ${projectsBlock}
+    </div>
+
+    <div style="margin-top:24px">
+      <div class="section-label">Recent costs</div>
+      <div class="cost-entries">${costsBlock}</div>
+    </div>
+
+    <div style="margin-top:24px">
+      <div class="section-label">Recent time</div>
+      ${timeBlock}
+    </div>
+  `;
+}
+
+// Open the project modal pre-filled with this property + room
+function prefillProjectForRoom(propertyId, roomName) {
+  // Reuse the existing project modal flow
+  if (typeof openProjectModal === 'function') {
+    openProjectModal();
+  } else {
+    // Fallback: open the modal element directly
+    document.getElementById('modal-project')?.classList.add('active');
+  }
+  // Set property + room after the modal populates its dropdowns
+  setTimeout(() => {
+    const propSel = document.getElementById('pf-property');
+    if (propSel) {
+      propSel.value = String(propertyId);
+      if (typeof populateProjectRoomDropdown === 'function') populateProjectRoomDropdown(roomName);
+    }
+  }, 50);
+}
+
+// ── Room edit modal (info, photo, notes) ─────────────
+let editingRoomCtx = null;  // { propertyId, roomName }
+
+function openRoomEditModal(propertyId, roomName) {
+  editingRoomCtx = { propertyId, roomName };
+  const data = getRoomData(propertyId, roomName);
+  document.getElementById('rf-title').textContent = 'Edit ' + roomName;
+  document.getElementById('rf-floor').value = data.floor || '';
+  document.getElementById('rf-dimensions').value = data.dimensions || '';
+  document.getElementById('rf-area').value = data.area || '';
+  document.getElementById('rf-notes').value = data.notes || '';
+  pendingRoomPhoto = data.photo || null;
+  refreshRoomPhotoPreview();
+  document.getElementById('modal-room').classList.add('active');
+}
+
+let pendingRoomPhoto = null;
+
+function refreshRoomPhotoPreview() {
+  const preview = document.getElementById('rf-photo-preview');
+  if (!preview) return;
+  if (pendingRoomPhoto) {
+    preview.innerHTML = `<div class="preview-item"><img src="${pendingRoomPhoto}" style="width:100%;height:120px;object-fit:cover;border-radius:8px;margin-top:8px"><button class="preview-remove" onclick="pendingRoomPhoto=null;refreshRoomPhotoPreview()">✕</button></div>`;
+  } else {
+    preview.innerHTML = '';
+  }
+}
+
+function onRoomPhotoChosen(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    pendingRoomPhoto = e.target.result;
+    refreshRoomPhotoPreview();
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+function saveRoomEdit() {
+  if (!editingRoomCtx) return;
+  const { propertyId, roomName } = editingRoomCtx;
+  setRoomData(propertyId, roomName, {
+    floor: document.getElementById('rf-floor').value.trim(),
+    dimensions: document.getElementById('rf-dimensions').value.trim(),
+    area: document.getElementById('rf-area').value.trim(),
+    notes: document.getElementById('rf-notes').value.trim(),
+    photo: pendingRoomPhoto || null,
+  });
+  editingRoomCtx = null;
+  pendingRoomPhoto = null;
+  closeModal('modal-room');
+  // Re-render whichever room view is active
+  if (document.getElementById('view-room-detail')?.classList.contains('active')) {
+    renderRoomDetail();
+  } else {
+    renderAll();
+  }
 }
 
 // ── Firebase Cloud Sync ───────────────────────────────
