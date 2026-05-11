@@ -2937,7 +2937,10 @@ function renderProperties() {
       const projCount = db.projects.filter(pj => pj.propertyId === p.id && (pj.loc||'').toLowerCase() === r.toLowerCase()).length;
       const thumb = data.photo
         ? `<div style="height:60px;background:url('${data.photo}') center/cover"></div>`
-        : `<div style="height:60px;background:var(--surface2);display:flex;align-items:center;justify-content:center;color:var(--ink3);font-size:20px">🚪</div>`;
+        : `<div onclick="event.stopPropagation();pickRoomThumb(${p.id}, '${safeRoom}')" title="Tap to add a photo" style="height:60px;background:var(--surface2);display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--ink3);gap:2px;cursor:pointer" onmouseover="this.style.background='var(--surface3,var(--surface2))';this.style.color='var(--accent)'" onmouseout="this.style.background='var(--surface2)';this.style.color='var(--ink3)'">
+            <div style="font-size:18px">📷</div>
+            <div style="font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em">Add photo</div>
+          </div>`;
       const meta = [];
       if (data.floor) meta.push(escapeHtml(data.floor));
       if (projCount) meta.push(projCount + ' proj' + (projCount !== 1 ? 's' : ''));
@@ -3013,6 +3016,29 @@ function renameRoomPrompt(propertyId, oldName) {
 // Open the detail page for a specific room
 function openRoomDetail(propertyId, roomName) {
   showView('room-detail', { propertyId, roomName });
+}
+
+// Quick photo upload straight from the property card's room tile
+// (no need to open the edit modal)
+function pickRoomThumb(propertyId, roomName) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.style.display = 'none';
+  input.addEventListener('change', () => {
+    const file = input.files && input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setRoomData(propertyId, roomName, { photo: e.target.result });
+      renderAll();
+    };
+    reader.readAsDataURL(file);
+  });
+  document.body.appendChild(input);
+  input.click();
+  // Clean up after the dialog closes
+  setTimeout(() => input.remove(), 30000);
 }
 
 // Aggregated stats for a single room (projects, costs, time, quotes)
