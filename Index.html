@@ -1,0 +1,3870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Home Project Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F4F1EC;
+  --surface: #FDFCFA;
+  --surface2: #EDE9E1;
+  --ink: #1C1A17;
+  --ink2: #5C5751;
+  --ink3: #9B9590;
+  --accent: #C85A2A;
+  --accent2: #E8824A;
+  --accent-bg: #FDF0EB;
+  --green: #2A7A4A;
+  --green-bg: #EBF5F0;
+  --blue: #2A5A9A;
+  --blue-bg: #EBF0F9;
+  --amber: #A07020;
+  --amber-bg: #FDF6E8;
+  --border: rgba(28,26,23,0.1);
+  --border2: rgba(28,26,23,0.18);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 2px 12px rgba(28,26,23,0.08);
+  --shadow-lg: 0 8px 32px rgba(28,26,23,0.12);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  min-height: 100vh;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ── Layout ── */
+.app { display: flex; min-height: 100vh; }
+
+.sidebar {
+  width: 220px;
+  min-width: 220px;
+  background: var(--ink);
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  z-index: 50;
+}
+
+.sidebar-logo {
+  padding: 24px 20px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.sidebar-logo .wordmark {
+  font-family: 'DM Serif Display', serif;
+  font-size: 18px;
+  color: #fff;
+  line-height: 1.2;
+}
+
+.sidebar-logo .tagline {
+  font-size: 11px;
+  color: rgba(255,255,255,0.4);
+  margin-top: 2px;
+  letter-spacing: 0.03em;
+}
+
+.nav { flex: 1; padding: 12px 0; }
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  font-size: 13px;
+  font-weight: 400;
+  color: rgba(255,255,255,0.55);
+  cursor: pointer;
+  transition: all 0.15s;
+  border-left: 2px solid transparent;
+}
+
+.nav-item:hover { color: rgba(255,255,255,0.85); background: rgba(255,255,255,0.05); }
+.nav-item.active { color: #fff; border-left-color: var(--accent2); background: rgba(255,255,255,0.07); font-weight: 500; }
+
+.nav-item .icon { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
+
+.sidebar-footer {
+  padding: 16px 20px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  font-size: 11px;
+  color: rgba(255,255,255,0.25);
+}
+
+.main { margin-left: 220px; flex: 1; min-height: 100vh; }
+
+.topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+.page-title { font-family: 'DM Serif Display', serif; font-size: 22px; color: var(--ink); }
+.page-subtitle { font-size: 12px; color: var(--ink3); margin-top: 1px; }
+
+.content { padding: 24px 28px; }
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: 'DM Sans', sans-serif;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border2);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  transition: all 0.15s;
+  text-decoration: none;
+}
+
+.btn:hover { background: var(--surface2); }
+.btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn.primary:hover { background: #B54D20; }
+.btn.ghost { border-color: transparent; background: transparent; }
+.btn.ghost:hover { background: var(--surface2); }
+.btn.sm { padding: 5px 10px; font-size: 12px; }
+.btn.danger { color: #c0392b; border-color: #c0392b; }
+.btn.danger:hover { background: #fef0f0; }
+
+/* ── Cards ── */
+.card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+/* ── Stats Row ── */
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+}
+
+.stat-label { font-size: 11px; font-weight: 500; color: var(--ink3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+.stat-value { font-family: 'DM Serif Display', serif; font-size: 26px; color: var(--ink); line-height: 1; }
+.stat-sub { font-size: 11px; color: var(--ink3); margin-top: 4px; }
+
+.stat-card.accent .stat-value { color: var(--accent); }
+.stat-card.green .stat-value { color: var(--green); }
+.stat-card.blue .stat-value { color: var(--blue); }
+
+/* ── Project Cards ── */
+.projects-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+
+.project-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  transition: box-shadow 0.2s;
+}
+
+.project-card:hover { box-shadow: var(--shadow-lg); }
+
+.project-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 16px 18px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.project-name { font-weight: 600; font-size: 15px; margin-bottom: 4px; }
+.project-meta { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+
+.badge.cat-diy     { background: #EDE7FE; color: #4C3D99; }
+.badge.cat-garden  { background: var(--green-bg); color: var(--green); }
+.badge.cat-maint   { background: var(--amber-bg); color: var(--amber); }
+.badge.cat-repair  { background: #FEE8E8; color: #993A3A; }
+.badge.status-planned   { background: var(--blue-bg); color: var(--blue); }
+.badge.status-progress  { background: var(--amber-bg); color: var(--amber); }
+.badge.status-done      { background: var(--green-bg); color: var(--green); }
+.badge.status-paused    { background: var(--surface2); color: var(--ink2); }
+.badge.prio-high   { background: #FEE8E8; color: #993A3A; }
+.badge.prio-med    { background: var(--amber-bg); color: var(--amber); }
+.badge.prio-low    { background: var(--green-bg); color: var(--green); }
+
+.project-card-body { display: grid; grid-template-columns: 1fr 1fr 1fr; }
+
+.pcard-section {
+  padding: 12px 18px;
+  border-right: 1px solid var(--border);
+}
+.pcard-section:last-child { border-right: none; }
+.pcard-section-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink3); margin-bottom: 8px; }
+
+.cost-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; font-size: 12px; }
+.cost-label { color: var(--ink2); }
+.cost-val { font-weight: 500; font-family: 'DM Sans', monospace; }
+.cost-val.over { color: #c0392b; }
+.cost-val.good { color: var(--green); }
+
+.time-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; font-size: 12px; color: var(--ink2); }
+.time-big { font-family: 'DM Serif Display', serif; font-size: 20px; color: var(--ink); line-height: 1; }
+
+.invoice-thumbs { display: flex; gap: 6px; flex-wrap: wrap; }
+.invoice-thumb {
+  width: 44px; height: 44px;
+  border-radius: 6px;
+  border: 1px solid var(--border2);
+  overflow: hidden;
+  cursor: pointer;
+  position: relative;
+}
+.invoice-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.invoice-thumb-add {
+  width: 44px; height: 44px;
+  border-radius: 6px;
+  border: 1px dashed var(--border2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; color: var(--ink3); cursor: pointer;
+  transition: all 0.15s;
+  background: transparent;
+}
+.invoice-thumb-add:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+
+.project-card-footer {
+  padding: 10px 18px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* ── Progress bar ── */
+.progress-wrap { margin-top: 6px; }
+.progress-bar { height: 4px; background: var(--surface2); border-radius: 2px; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 2px; transition: width 0.4s; }
+.progress-fill.good { background: var(--green); }
+.progress-fill.warn { background: var(--amber); }
+.progress-fill.over { background: #c0392b; }
+.progress-label { font-size: 10px; color: var(--ink3); margin-top: 3px; }
+
+/* ── Modal ── */
+.modal-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(28,26,23,0.45);
+  z-index: 200;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 40px 16px;
+  overflow-y: auto;
+}
+
+.modal-overlay.open { display: flex; }
+
+.modal {
+  background: var(--surface);
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-lg);
+  width: 100%;
+  max-width: 560px;
+  overflow: hidden;
+  animation: slideUp 0.2s ease;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.modal-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modal-header h3 { font-family: 'DM Serif Display', serif; font-size: 18px; }
+.modal-close { font-size: 20px; cursor: pointer; color: var(--ink3); background: none; border: none; padding: 4px; border-radius: 4px; }
+.modal-close:hover { color: var(--ink); background: var(--surface2); }
+
+.modal-body { padding: 20px 24px; }
+.modal-footer { padding: 14px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; }
+
+/* ── Form ── */
+.field { margin-bottom: 14px; }
+.field label { display: block; font-size: 12px; font-weight: 500; color: var(--ink2); margin-bottom: 5px; }
+
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  padding: 9px 12px;
+  font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.field input:focus, .field select:focus, .field textarea:focus {
+  border-color: var(--accent);
+  background: var(--surface);
+}
+
+.field textarea { height: 70px; resize: vertical; }
+
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.field-row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+/* ── Upload area ── */
+.upload-area {
+  border: 2px dashed var(--border2);
+  border-radius: var(--radius-sm);
+  padding: 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: var(--bg);
+  position: relative;
+}
+
+.upload-area:hover, .upload-area.drag { border-color: var(--accent); background: var(--accent-bg); }
+.upload-area input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.upload-icon { font-size: 28px; margin-bottom: 8px; }
+.upload-text { font-size: 13px; color: var(--ink2); }
+.upload-text strong { color: var(--accent); }
+.upload-hint { font-size: 11px; color: var(--ink3); margin-top: 4px; }
+
+.preview-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.preview-item { position: relative; }
+.preview-item img { width: 64px; height: 64px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border2); display: block; }
+.preview-remove {
+  position: absolute; top: -6px; right: -6px;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: #c0392b; color: #fff;
+  font-size: 10px; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700;
+}
+
+/* ── Image Lightbox ── */
+.lightbox {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.85);
+  z-index: 300;
+  align-items: center;
+  justify-content: center;
+}
+
+.lightbox.open { display: flex; }
+.lightbox img { max-width: 90vw; max-height: 90vh; border-radius: 8px; }
+.lightbox-close {
+  position: fixed; top: 16px; right: 20px;
+  font-size: 28px; color: #fff; cursor: pointer; background: none; border: none;
+}
+
+/* ── Time log list ── */
+.time-entries { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.time-entry {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 10px;
+  background: var(--bg);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--ink2);
+}
+
+.time-entry .te-date { color: var(--ink3); font-size: 11px; }
+.time-entry .te-hrs { font-weight: 600; color: var(--blue); }
+.time-entry .te-del { background: none; border: none; color: var(--ink3); cursor: pointer; font-size: 14px; padding: 0 2px; }
+.time-entry .te-del:hover { color: #c0392b; }
+
+/* ── Tabs ── */
+.tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+.tab { padding: 10px 16px; font-size: 13px; font-weight: 500; color: var(--ink3); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; }
+.tab:hover { color: var(--ink); }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* ── Section label ── */
+.section-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--ink3); margin-bottom: 10px; }
+
+/* ── Views ── */
+.view { display: none; }
+.view.active { display: block; }
+
+/* ── Empty state ── */
+.empty-state { text-align: center; padding: 48px 20px; color: var(--ink3); }
+.empty-icon { font-size: 40px; margin-bottom: 12px; }
+.empty-title { font-family: 'DM Serif Display', serif; font-size: 20px; color: var(--ink2); margin-bottom: 6px; }
+.empty-text { font-size: 13px; }
+
+/* ── Cost log list ── */
+.cost-entries { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.cost-entry {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 10px;
+  background: var(--bg);
+  border-radius: 6px;
+  font-size: 12px;
+}
+.cost-entry .ce-label { color: var(--ink2); flex: 1; }
+.cost-entry .ce-amount { font-weight: 600; font-family: monospace; color: var(--ink); }
+.cost-entry .ce-date { color: var(--ink3); font-size: 11px; min-width: 72px; text-align: right; }
+.cost-entry .ce-del { background: none; border: none; color: var(--ink3); cursor: pointer; font-size: 14px; padding: 0 2px; margin-left: 6px; }
+.cost-entry .ce-del:hover { color: #c0392b; }
+
+/* ── Reports ── */
+.report-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+.report-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; }
+.report-card h4 { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink3); margin-bottom: 12px; }
+.report-row { display: flex; justify-content: space-between; font-size: 13px; padding: 5px 0; border-bottom: 1px solid var(--border); color: var(--ink2); }
+.report-row:last-child { border-bottom: none; }
+.report-row .rr-val { font-weight: 500; color: var(--ink); }
+
+/* ── Responsive ── */
+@media (max-width: 700px) {
+  /* Hide desktop sidebar */
+  .sidebar { display: none; }
+  .main { margin-left: 0; padding-bottom: 70px; }
+
+  /* Topbar */
+  .topbar { padding: 12px 16px; }
+  .page-title { font-size: 18px; }
+  .page-subtitle { display: none; }
+  .topbar .btn { padding: 7px 10px; font-size: 12px; }
+
+  /* Content */
+  .content { padding: 14px 12px; }
+
+  /* Stats */
+  .stats-grid { grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+  .stat-value { font-size: 20px; }
+  .stat-card { padding: 12px 14px; }
+
+  /* Project cards */
+  .project-card-body { grid-template-columns: 1fr; }
+  .pcard-section { border-right: none; border-bottom: 1px solid var(--border); }
+  .pcard-section:last-child { border-bottom: none; }
+  .project-card-header { flex-direction: column; gap: 10px; }
+  .project-card-header > div:last-child { display: flex; flex-wrap: wrap; gap: 6px; width: 100%; }
+  .project-card-header > div:last-child .btn { flex: 1; justify-content: center; min-width: 36px; }
+
+  /* Forms */
+  .field-row, .field-row3 { grid-template-columns: 1fr; }
+  .modal { border-radius: 16px 16px 0 0; margin-top: auto; max-width: 100%; }
+  .modal-overlay { padding: 0; align-items: flex-end; }
+
+  /* Reports */
+  .report-grid { grid-template-columns: 1fr; }
+
+  /* Property breakdown table - stack on mobile */
+  #dash-property-breakdown .card > div[style*="grid-template-columns:2fr"] {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+  }
+
+  /* Bottom nav */
+  .bottom-nav {
+    display: flex !important;
+  }
+}
+
+/* Bottom navigation bar - mobile only */
+.bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: var(--ink);
+  z-index: 100;
+  height: 64px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding: 0 4px;
+  align-items: stretch;
+  justify-content: space-around;
+}
+
+.bottom-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 6px 8px;
+  cursor: pointer;
+  color: rgba(255,255,255,0.45);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  border-top: 2px solid transparent;
+  flex: 1;
+  transition: all 0.15s;
+  text-align: center;
+}
+
+.bottom-nav-item .bn-icon { font-size: 20px; line-height: 1; }
+.bottom-nav-item.active { color: #fff; border-top-color: var(--accent2); }
+.bottom-nav-item:hover { color: rgba(255,255,255,0.8); }
+
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="wordmark">Home Projects</div>
+      <div class="tagline">Track · Build · Save</div>
+    </div>
+    <nav class="nav">
+      <div class="nav-item active" onclick="showView('dashboard')">
+        <span class="icon">🏠</span><span>Dashboard</span>
+      </div>
+      <div class="nav-item" onclick="showView('projects')">
+        <span class="icon">📋</span><span>Projects</span>
+      </div>
+      <div class="nav-item" onclick="showView('costs')">
+        <span class="icon">💰</span><span>Costs</span>
+      </div>
+      <div class="nav-item" onclick="showView('time')">
+        <span class="icon">⏱</span><span>Time Log</span>
+      </div>
+      <div class="nav-item" onclick="showView('quotes')">
+        <span class="icon">📄</span><span>Quotes</span>
+      </div>
+      <div class="nav-item" onclick="showView('reports')">
+        <span class="icon">📊</span><span>Reports</span>
+      </div>
+      <div class="nav-item" onclick="showView('properties')">
+        <span class="icon">🏘</span><span>Properties</span>
+      </div>
+      <div class="nav-item" onclick="showView('rooms')">
+        <span class="icon">🚪</span><span>Rooms</span>
+      </div>
+    </nav>
+    <div class="sidebar-footer" id="sync-status">v1.1 · Local + Cloud</div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+
+    <!-- Topbar -->
+    <div class="topbar">
+      <div>
+        <div class="page-title" id="page-title">Dashboard</div>
+        <div class="page-subtitle" id="page-subtitle">Overview of all your home projects</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn" onclick="openSyncModal()" id="cloud-btn" title="Cloud Sync">☁️ Cloud</button>
+        <button class="btn primary" onclick="openProjectModal()">+ New Project</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ══ DASHBOARD VIEW ══ -->
+      <div class="view active" id="view-dashboard">
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">Total Projects</div>
+            <div class="stat-value" id="st-total">0</div>
+            <div class="stat-sub" id="st-status-summary">—</div>
+          </div>
+          <div class="stat-card accent">
+            <div class="stat-label">Total Spent</div>
+            <div class="stat-value" id="st-spent">0 kr</div>
+            <div class="stat-sub" id="st-budget-pct">of budget</div>
+          </div>
+          <div class="stat-card blue">
+            <div class="stat-label">Hours Logged</div>
+            <div class="stat-value" id="st-hours">0h</div>
+            <div class="stat-sub" id="st-sessions">sessions</div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-label">Cost Photos</div>
+            <div class="stat-value" id="st-invoices">0</div>
+            <div class="stat-sub">myndir af kvittunum</div>
+          </div>
+        </div>
+
+        <div id="dash-property-breakdown"></div>
+
+        <div id="dash-project-list"></div>
+      </div>
+
+      <!-- ══ PROJECTS VIEW ══ -->
+      <div class="view" id="view-projects">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <select id="filter-cat" onchange="renderProjects()" style="font-size:12px;padding:6px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--surface);color:var(--ink);font-family:'DM Sans',sans-serif">
+              <option value="">All Categories</option>
+              <option>DIY / Renovations</option>
+              <option>Garden & Landscaping</option>
+              <option>Maintenance</option>
+              <option>Repairs</option>
+            </select>
+            <select id="filter-status" onchange="renderProjects()" style="font-size:12px;padding:6px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--surface);color:var(--ink);font-family:'DM Sans',sans-serif">
+              <option value="">All Statuses</option>
+              <option>Planned</option>
+              <option>In Progress</option>
+              <option>Done</option>
+              <option>Paused</option>
+            </select>
+            <select id="filter-property" onchange="renderProjects()" style="font-size:12px;padding:6px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--surface);color:var(--ink);font-family:'DM Sans',sans-serif">
+              <option value="">All Properties</option>
+            </select>
+          </div>
+        </div>
+        <div id="projects-list"></div>
+      </div>
+
+      <!-- ══ COSTS VIEW ══ -->
+      <div class="view" id="view-costs">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <div class="section-label">All Cost Entries</div>
+          <button class="btn sm primary" onclick="openCostModal()">+ Add Cost</button>
+        </div>
+        <div id="all-costs-list"></div>
+      </div>
+
+      <!-- ══ TIME VIEW ══ -->
+      <div class="view" id="view-time">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px">
+          <div style="display:flex;align-items:center;gap:14px">
+            <div class="section-label">Time Log</div>
+            <div class="tlog-tabs" style="display:flex;gap:4px;background:var(--surface2);padding:3px;border-radius:8px">
+              <button id="tlog-tab-grouped" onclick="setTimeLogTab('grouped')" class="btn sm" style="font-size:12px;padding:6px 12px">Grouped</button>
+              <button id="tlog-tab-timeline" onclick="setTimeLogTab('timeline')" class="btn sm ghost" style="font-size:12px;padding:6px 12px">Timeline</button>
+            </div>
+          </div>
+          <button class="btn sm primary" onclick="openTimeModal()">+ Log Time</button>
+        </div>
+        <div id="all-time-list"></div>
+      </div>
+
+      <!-- ══ QUOTES VIEW ══ -->
+      <div class="view" id="view-quotes">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <div class="section-label">All Quotes</div>
+          <button class="btn sm primary" onclick="openQuoteModal()">+ Add Quote</button>
+        </div>
+        <div id="all-quotes-list"></div>
+      </div>
+
+      <!-- ══ REPORTS VIEW ══ -->
+      <div class="view" id="view-reports">
+        <div id="reports-content"></div>
+      </div>
+
+      <!-- ══ PROPERTIES VIEW ══ -->
+      <div class="view" id="view-properties">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+          <div>
+            <div class="section-label">Your Properties</div>
+            <div style="font-size:12px;color:var(--ink3);margin-top:2px">Manage the properties you work on — your home, kids' homes, family, etc.</div>
+          </div>
+          <button class="btn sm primary" onclick="openPropertyModal()">+ Add Property</button>
+        </div>
+        <div id="properties-list"></div>
+      </div>
+
+      <!-- ══ ROOMS OVERVIEW ══ -->
+      <div class="view" id="view-rooms">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:12px;flex-wrap:wrap">
+          <div>
+            <div class="section-label">All Rooms</div>
+            <div style="font-size:12px;color:var(--ink3);margin-top:2px">Browse rooms across all your properties</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
+          <input type="text" id="rooms-search" oninput="renderRoomsOverview()" placeholder="Search rooms…" style="flex:1;min-width:160px;font-size:13px;padding:8px 12px;border:1px solid var(--border2);border-radius:6px;background:var(--surface);color:var(--ink);font-family:'DM Sans',sans-serif">
+          <select id="rooms-filter-property" onchange="renderRoomsOverview()" style="font-size:12px;padding:8px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--surface);color:var(--ink);font-family:'DM Sans',sans-serif">
+            <option value="">All Properties</option>
+          </select>
+          <select id="rooms-filter-floor" onchange="renderRoomsOverview()" style="font-size:12px;padding:8px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--surface);color:var(--ink);font-family:'DM Sans',sans-serif">
+            <option value="">All Floors</option>
+          </select>
+          <select id="rooms-filter-activity" onchange="renderRoomsOverview()" style="font-size:12px;padding:8px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--surface);color:var(--ink);font-family:'DM Sans',sans-serif">
+            <option value="">All Rooms</option>
+            <option value="has">With projects</option>
+            <option value="active">With active projects</option>
+            <option value="empty">No projects</option>
+          </select>
+        </div>
+        <div id="rooms-list"></div>
+      </div>
+
+      <!-- ══ ROOM DETAIL ══ -->
+      <div class="view" id="view-room-detail">
+        <div id="room-detail-content"></div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- Mobile bottom nav -->
+<nav class="bottom-nav" id="bottom-nav">
+  <div class="bottom-nav-item active" onclick="showView('dashboard')" data-view="dashboard">
+    <span class="bn-icon">🏠</span><span>Home</span>
+  </div>
+  <div class="bottom-nav-item" onclick="showView('projects')" data-view="projects">
+    <span class="bn-icon">📋</span><span>Projects</span>
+  </div>
+  <div class="bottom-nav-item" onclick="showView('costs')" data-view="costs">
+    <span class="bn-icon">💰</span><span>Costs</span>
+  </div>
+  <div class="bottom-nav-item" onclick="showView('time')" data-view="time">
+    <span class="bn-icon">⏱</span><span>Time</span>
+  </div>
+  <div class="bottom-nav-item" onclick="showView('quotes')" data-view="quotes">
+    <span class="bn-icon">📄</span><span>Quotes</span>
+  </div>
+  <div class="bottom-nav-item" onclick="showView('rooms')" data-view="rooms">
+    <span class="bn-icon">🚪</span><span>Rooms</span>
+  </div>
+</nav>
+
+<!-- ══════════════════════════════════════════
+     MODALS
+══════════════════════════════════════════ -->
+
+<!-- Project Modal -->
+<div class="modal-overlay" id="modal-project" onclick="closeBg(event,'modal-project')">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-project-title">New Project</h3>
+      <button class="modal-close" onclick="closeModal('modal-project')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-row">
+        <div class="field">
+          <label>Project Name *</label>
+          <input type="text" id="pf-name" placeholder="e.g. Paint living room">
+        </div>
+        <div class="field">
+          <label>Location / Room</label>
+          <select id="pf-loc" onchange="onProjectRoomChange()" style="font-family:inherit"></select>
+          <div id="pf-loc-help" style="font-size:11px;color:var(--ink3);margin-top:4px"></div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Property</label>
+        <select id="pf-property" onchange="populateProjectRoomDropdown()">
+          <option value="">— No property selected —</option>
+        </select>
+      </div>
+      <div class="field-row3">
+        <div class="field">
+          <label>Category</label>
+          <select id="pf-cat">
+            <option>DIY / Renovations</option>
+            <option>Garden & Landscaping</option>
+            <option>Maintenance</option>
+            <option>Repairs</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Status</label>
+          <select id="pf-status">
+            <option>Planned</option>
+            <option>In Progress</option>
+            <option>Done</option>
+            <option>Paused</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Priority</label>
+          <select id="pf-prio">
+            <option>High</option>
+            <option>Medium</option>
+            <option>Low</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Start Date</label>
+          <input type="date" id="pf-start">
+        </div>
+        <div class="field">
+          <label>Due Date</label>
+          <input type="date" id="pf-due">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Budget (kr)</label>
+          <input type="number" id="pf-budget" placeholder="0" min="0">
+        </div>
+        <div class="field">
+          <label>Contractor / Supplier</label>
+          <input type="text" id="pf-contractor" placeholder="Self or company name">
+        </div>
+      </div>
+      <div class="field">
+        <label>Notes</label>
+        <textarea id="pf-notes" placeholder="Materials, plans, links..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-project')">Cancel</button>
+      <button class="btn primary" onclick="saveProject()">Save Project</button>
+    </div>
+  </div>
+</div>
+
+<!-- Cost Modal -->
+<div class="modal-overlay" id="modal-cost" onclick="closeBg(event,'modal-cost')">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Log a Cost</h3>
+      <button class="modal-close" onclick="closeModal('modal-cost')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Project *</label>
+        <select id="cf-project"></select>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Description *</label>
+          <input type="text" id="cf-desc" placeholder="e.g. Paint and brushes">
+        </div>
+        <div class="field">
+          <label>Amount (kr) *</label>
+          <input type="number" id="cf-amount" placeholder="0" min="0" step="1">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Date</label>
+          <input type="date" id="cf-date">
+        </div>
+        <div class="field">
+          <label>Category</label>
+          <select id="cf-cat">
+            <option>Materials</option>
+            <option>Labour</option>
+            <option>Equipment Hire</option>
+            <option>Delivery</option>
+            <option>Permit / Fee</option>
+            <option>Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Receipt / Invoice Photo</label>
+        <div class="upload-area" id="cost-upload-area">
+          <input type="file" accept="image/*" id="cf-photo" onchange="handleCostPhoto(this)">
+          <div class="upload-icon">📷</div>
+          <div class="upload-text"><strong>Tap to photograph</strong> or choose file</div>
+          <div class="upload-hint">JPG, PNG — saved locally in your browser</div>
+        </div>
+        <div class="preview-grid" id="cf-photo-preview"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-cost')">Cancel</button>
+      <button class="btn primary" onclick="saveCost()">Save Cost</button>
+    </div>
+  </div>
+</div>
+
+<!-- Time Modal -->
+<div class="modal-overlay" id="modal-time" onclick="closeBg(event,'modal-time')">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-time-title">Log Time</h3>
+      <button class="modal-close" onclick="closeModal('modal-time')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Project *</label>
+        <select id="tf-project"></select>
+      </div>
+      <div class="field">
+        <label>Person *</label>
+        <select id="tf-user"></select>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Date</label>
+          <input type="date" id="tf-date">
+        </div>
+        <div class="field">
+          <label>From</label>
+          <input type="time" id="tf-time-from" oninput="recalcHoursFromTimes()">
+        </div>
+        <div class="field">
+          <label>To</label>
+          <input type="time" id="tf-time-to" oninput="recalcHoursFromTimes()">
+        </div>
+        <div class="field">
+          <label>Hours *</label>
+          <input type="number" id="tf-hours" placeholder="e.g. 2.5" min="0.25" step="0.25">
+        </div>
+      </div>
+      <div class="field">
+        <label>What did you work on?</label>
+        <textarea id="tf-notes" placeholder="e.g. Sanded the door frames, applied primer coat..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-time')">Cancel</button>
+      <button class="btn primary" onclick="saveTime()" id="tf-save-btn">Save Time</button>
+    </div>
+  </div>
+</div>
+
+<!-- Project Costs Modal -->
+<div class="modal-overlay" id="modal-project-costs" onclick="closeBg(event,'modal-project-costs')">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-header">
+      <h3 id="modal-costs-title">Kostnaður</h3>
+      <button class="modal-close" onclick="closeModal('modal-project-costs')">✕</button>
+    </div>
+    <div class="modal-body" id="modal-costs-body" style="padding:0"></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-project-costs')">Loka</button>
+      <button class="btn primary" id="modal-costs-add-btn">+ Bæta við kostnaði</button>
+    </div>
+  </div>
+</div>
+
+<!-- Cloud Sync Modal -->
+<div class="modal-overlay" id="modal-sync" onclick="closeBg(event,'modal-sync')">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>☁️ Cloud Sync</h3>
+      <button class="modal-close" onclick="closeModal('modal-sync')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="cloud-sign-in-section">
+        <p style="font-size:13px;color:var(--ink2);margin-bottom:16px;line-height:1.6">Sign in with Google to sync your projects to the shared cloud database. Everyone on the allow-list sees the same data, live, on any device.</p>
+        <button class="btn primary" style="width:100%;justify-content:center" onclick="handleGoogleSignIn()">
+          <svg width="16" height="16" viewBox="0 0 24 24" style="flex-shrink:0"><path fill="#fff" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#fff" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#fff" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#fff" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+          Sign in with Google
+        </button>
+        <div id="cloud-signin-error" style="margin-top:12px;font-size:12px;color:var(--accent);display:none"></div>
+      </div>
+      <div id="cloud-signed-in-section" style="display:none">
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--green-bg);border-radius:8px;margin-bottom:16px">
+          <span style="font-size:20px">✅</span>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:500;color:var(--green)">Connected — live sync on</div>
+            <div style="font-size:11px;color:var(--ink3);overflow:hidden;text-overflow:ellipsis" id="cloud-user-email"></div>
+          </div>
+          <button class="btn sm" onclick="handleSignOut()">Sign out</button>
+        </div>
+        <div id="cloud-file-info" style="font-size:11px;color:var(--ink3);text-align:center"></div>
+        <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+          <div style="font-size:11px;color:var(--ink3);margin-bottom:8px;font-weight:500">SHARE WITH OTHERS</div>
+          <p style="font-size:12px;color:var(--ink2);line-height:1.5;margin-bottom:8px">Anyone you add here can sign in with Google and edit the same data live.</p>
+          <div id="cloud-collaborators" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px"></div>
+          <div style="display:flex;gap:6px">
+            <input type="email" id="cloud-add-email" placeholder="someone@gmail.com" style="flex:1;padding:8px 10px;border:1px solid var(--border2);border-radius:6px;font-size:13px;font-family:inherit">
+            <button class="btn sm" onclick="addCollaborator()">Add</button>
+          </div>
+          <div id="cloud-collab-error" style="margin-top:6px;font-size:11px;color:var(--accent);display:none"></div>
+        </div>
+      </div>
+      <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
+        <div style="font-size:11px;color:var(--ink3);margin-bottom:8px;font-weight:500">LOCAL BACKUP</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn sm" style="flex:1;justify-content:center" onclick="exportData()">⬇️ Download backup</button>
+          <label class="btn sm" style="flex:1;justify-content:center;cursor:pointer">
+            ⬆️ Import backup
+            <input type="file" accept=".json" style="display:none" onchange="importData(this)">
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-sync')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Quote Modal -->
+<div class="modal-overlay" id="modal-quote" onclick="closeBg(event,'modal-quote')">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-quote-title">Add Quote</h3>
+      <button class="modal-close" onclick="closeModal('modal-quote')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Project *</label>
+        <select id="qf-project"></select>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Supplier / Contractor *</label>
+          <input type="text" id="qf-supplier" placeholder="e.g. Björn Construction">
+        </div>
+        <div class="field">
+          <label>Quote Amount (kr) *</label>
+          <input type="number" id="qf-amount" placeholder="0" min="0" step="1">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Date Received</label>
+          <input type="date" id="qf-date">
+        </div>
+        <div class="field">
+          <label>Valid Until</label>
+          <input type="date" id="qf-valid">
+        </div>
+      </div>
+      <div class="field">
+        <label>Description / Scope of work</label>
+        <textarea id="qf-desc" placeholder="What does this quote cover?"></textarea>
+      </div>
+      <div class="field">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" id="qf-accepted" style="width:auto">
+          <span>Mark as accepted quote</span>
+        </label>
+      </div>
+      <div class="field">
+        <label>Quote Photo / Document</label>
+        <div class="upload-area">
+          <input type="file" accept="image/*" id="qf-photo" onchange="handleQuotePhoto(this)">
+          <div class="upload-icon">📄</div>
+          <div class="upload-text"><strong>Tap to photograph</strong> the quote document</div>
+          <div class="upload-hint">JPG, PNG — saved locally in your browser</div>
+        </div>
+        <div class="preview-grid" id="qf-photo-preview"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-quote')">Cancel</button>
+      <button class="btn primary" onclick="saveQuote()" id="qf-save-btn">Save Quote</button>
+    </div>
+  </div>
+</div>
+
+<!-- Property Modal -->
+<div class="modal-overlay" id="modal-property" onclick="closeBg(event,'modal-property')">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-property-title">Add Property</h3>
+      <button class="modal-close" onclick="closeModal('modal-property')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Property Name *</label>
+        <input type="text" id="prop-name" placeholder="e.g. Mamma's house, My apartment">
+      </div>
+      <div class="field">
+        <label>Address</label>
+        <input type="text" id="prop-address" placeholder="e.g. Laugavegur 10, Reykjavík">
+      </div>
+      <div class="field">
+        <label>Owner / Relation</label>
+        <input type="text" id="prop-owner" placeholder="e.g. Self, Mamma, Siggi">
+      </div>
+      <div class="field">
+        <label>Mynd af húsinu</label>
+        <div class="upload-area" id="prop-upload-area">
+          <input type="file" accept="image/*" id="prop-photo-input" onchange="handlePropertyPhoto(this)">
+          <div class="upload-icon">🏠</div>
+          <div class="upload-text"><strong>Smelltu til að velja mynd</strong> af húsinu</div>
+          <div class="upload-hint">JPG, PNG — geymd í vafra</div>
+        </div>
+        <div class="preview-grid" id="prop-photo-preview"></div>
+      </div>
+      <div class="field">
+        <label>Notes</label>
+        <textarea id="prop-notes" placeholder="Any useful notes about this property..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-property')">Cancel</button>
+      <button class="btn primary" onclick="saveProperty()">Save Property</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Edit Room modal ── -->
+<div class="modal-overlay" id="modal-room" onclick="closeBg(event,'modal-room')">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="rf-title">Edit Room</h3>
+      <button class="modal-close" onclick="closeModal('modal-room')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Floor</label>
+        <input type="text" id="rf-floor" placeholder="e.g. Ground floor, 1st floor, Basement">
+      </div>
+      <div class="field">
+        <label>Dimensions</label>
+        <input type="text" id="rf-dimensions" placeholder="e.g. 4.2 × 3.5 m">
+      </div>
+      <div class="field">
+        <label>Area</label>
+        <input type="text" id="rf-area" placeholder="e.g. 14.7 m²">
+      </div>
+      <div class="field">
+        <label>Photo of the room</label>
+        <div class="upload-area">
+          <input type="file" accept="image/*" id="rf-photo-input" onchange="onRoomPhotoChosen(this)">
+          <div class="upload-icon">📷</div>
+          <div class="upload-text"><strong>Tap to choose</strong> a photo</div>
+          <div class="upload-hint">JPG, PNG — saved locally</div>
+        </div>
+        <div class="preview-grid" id="rf-photo-preview"></div>
+      </div>
+      <div class="field">
+        <label>Notes</label>
+        <textarea id="rf-notes" placeholder="Wall colours, furniture, paint codes, ideas, anything…"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-room')">Cancel</button>
+      <button class="btn primary" onclick="saveRoomEdit()">Save Room</button>
+    </div>
+  </div>
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+  <img id="lightbox-img" src="" alt="Invoice">
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────
+let db = {
+  projects: [],
+  costs: [],
+  timeLog: [],
+  invoices: [],
+  quotes: [],
+  properties: []
+};
+
+let editProjectId = null;
+let pendingCostPhoto = null;
+let nextId = 1;
+
+// ── Persistence ────────────────────────────────────────
+// Note: saveDB() is defined further down in the Firebase Cloud Sync section
+// — it persists to localStorage and pushes to the cloud when signed in.
+
+function loadDB() {
+  try {
+    const raw = localStorage.getItem('hpt_db');
+    if (raw) {
+      db = JSON.parse(raw);
+      if (!db.properties) db.properties = [];
+      nextId = Math.max(
+        ...[...db.projects, ...db.costs, ...db.timeLog, ...db.invoices, ...(db.quotes||[]), ...(db.properties||[])].map(x => x.id || 0),
+        0
+      ) + 1;
+    }
+  } catch(e) {}
+  if (!db.projects.length) seedData();
+}
+
+function newId() { return nextId++; }
+
+// ── Seed data ──────────────────────────────────────────
+function seedData() {
+  db = {
+    "projects": [
+      { "id": 16, "name": "Mála húsið", "loc": "", "cat": "DIY / Renovations", "status": "Planned", "prio": "Medium", "start": "2026-05-01", "due": "2026-06-30", "budget": 1000000, "contractor": "", "notes": "", "propertyId": 22 },
+      { "id": 18, "name": "Mála grindverk í garði", "loc": "garður", "cat": "DIY / Renovations", "status": "Planned", "prio": "Medium", "start": "2026-04-25", "due": "", "budget": 0, "contractor": "", "notes": "", "propertyId": 22 },
+      { "id": 19, "name": "Færa þvottahús", "loc": "Bath/loundry", "cat": "DIY / Renovations", "status": "Planned", "prio": "Medium", "start": "2026-04-25", "due": "", "budget": 0, "contractor": "", "notes": "þarf að skoða með að fá hillu eða þá innréttingu undir þvottavélina", "propertyId": 22 },
+      { "id": 20, "name": "Laga pottinn", "loc": "Garður", "cat": "DIY / Renovations", "status": "Planned", "prio": "Medium", "start": "2026-04-25", "due": "2026-05-26", "budget": 0, "contractor": "", "notes": "", "propertyId": 22 },
+      { "id": 25, "name": "Setja Tengla fyrir ryksugu", "loc": "Geymsla", "cat": "DIY / Renovations", "status": "Planned", "prio": "Medium", "start": "2026-04-26", "due": "", "budget": 0, "contractor": "", "notes": "", "propertyId": 24 },
+      { "id": 26, "name": "Wifi og Myndavélar Kjarri", "loc": "", "cat": "DIY / Renovations", "status": "In Progress", "prio": "Medium", "start": "2026-04-25", "due": "", "budget": 0, "contractor": "", "notes": "", "propertyId": 23 }
+    ],
+    "costs": [],
+    "timeLog": [
+      { "id": 17, "projectId": 16, "date": "2026-04-25", "hours": 1, "notes": "Skipuleggja" },
+      { "id": 27, "projectId": 26, "date": "2026-04-25", "hours": 8, "notes": "Lagt fyrir myndavélum og wifi, dregið í cat 5 strengin um húsið, settur upp patch skápur og rennur," }
+    ],
+    "invoices": [],
+    "quotes": [],
+    "properties": [
+      { "id": 21, "name": "Andri og Sonja", "address": "Álalind 18", "owner": "", "notes": "" },
+      { "id": 22, "name": "Heima", "address": "Björtusalir 11", "owner": "", "notes": "" },
+      { "id": 23, "name": "Kjaran og Telma", "address": "Kvistaberg 23", "owner": "", "notes": "" },
+      { "id": 24, "name": "Magga og Símin", "address": "Mávahlið 30", "owner": "", "notes": "" }
+    ]
+  };
+  nextId = 28;
+  saveDB();
+}
+
+// ── Helpers ────────────────────────────────────────────
+function fmtEuro(v) { return Number(v||0).toLocaleString('de-DE') + ' kr'; }
+function fmtHrs(h) { return Number(h||0) % 1 === 0 ? Number(h||0) + 'h' : Number(h||0).toFixed(1) + 'h'; }
+function fmtDate(d) { if (!d) return '—'; const p = d.split('-'); return p[2]+'/'+p[1]+'/'+p[0].slice(2); }
+function today() { return new Date().toISOString().split('T')[0]; }
+function nowHHMM() {
+  const d = new Date();
+  return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+}
+// Difference in hours between two HH:MM strings; handles wrap-around past midnight
+function hoursBetween(from, to) {
+  if (!from || !to) return 0;
+  const [fh, fm] = from.split(':').map(Number);
+  const [th, tm] = to.split(':').map(Number);
+  if (isNaN(fh) || isNaN(th)) return 0;
+  let diff = (th * 60 + tm) - (fh * 60 + fm);
+  if (diff < 0) diff += 24 * 60; // wrap past midnight
+  return Math.round((diff / 60) * 100) / 100;
+}
+// Pretty range like "08:00–12:00" (or just "08:00" if no end yet)
+function timeRangeStr(entry) {
+  if (!entry) return '';
+  const f = entry.timeFrom || entry.time || '';
+  const t = entry.timeTo || '';
+  if (f && t) return f + '–' + t;
+  if (f) return f;
+  return '';
+}
+// Recalculate the hours field from From/To inputs in the time modal.
+function recalcHoursFromTimes() {
+  const from = document.getElementById('tf-time-from').value;
+  const to = document.getElementById('tf-time-to').value;
+  if (from && to) {
+    const h = hoursBetween(from, to);
+    if (h > 0) document.getElementById('tf-hours').value = h;
+  }
+}
+
+function projectCosts(pid) { return db.costs.filter(c => c.projectId === pid).reduce((s,c) => s + Number(c.amount||0), 0); }
+function projectHours(pid) { return db.timeLog.filter(t => t.projectId === pid).reduce((s,t) => s + Number(t.hours||0), 0); }
+function projectInvoices(pid) { return db.invoices.filter(i => i.projectId === pid); }
+function projectQuotes(pid) { return (db.quotes||[]).filter(q => q.projectId === pid); }
+
+// ── User helpers (collaborators / display names / permissions) ──────
+// Current allow-list snapshot, kept up to date by the cloud listener.
+let collaboratorEmails = [];
+
+// Filter for time log views: '' = all users, otherwise an email
+let timeLogUserFilter = '';
+
+function currentUserEmail() {
+  return (fbUser && fbUser.email) ? fbUser.email.toLowerCase() : '';
+}
+
+function isSuperuser(email) {
+  return (email || '').toLowerCase() === SUPERUSER_EMAIL.toLowerCase();
+}
+
+function isCurrentUserSuperuser() {
+  return isSuperuser(currentUserEmail());
+}
+
+function userDisplayName(email) {
+  if (!email) return 'Unassigned';
+  const e = email.toLowerCase();
+  if (db.userNames && db.userNames[e]) return db.userNames[e];
+  // Default: take the part before '@' and prettify
+  const local = e.split('@')[0].replace(/[._-]/g, ' ');
+  return local.charAt(0).toUpperCase() + local.slice(1);
+}
+
+function setUserDisplayName(email, name) {
+  if (!email) return;
+  if (!db.userNames) db.userNames = {};
+  const e = email.toLowerCase();
+  const trimmed = (name || '').trim();
+  if (!trimmed) {
+    delete db.userNames[e];
+  } else {
+    db.userNames[e] = trimmed;
+  }
+  saveDB();
+}
+
+// Can the current signed-in user edit/delete this time entry?
+function canEditTimeEntry(entry) {
+  if (!entry) return false;
+  if (isCurrentUserSuperuser()) return true;
+  return (entry.userEmail || '').toLowerCase() === currentUserEmail();
+}
+
+// All known users (from collaborator list + any users referenced by time entries)
+function knownUserEmails() {
+  const set = new Set();
+  collaboratorEmails.forEach(e => e && set.add(e.toLowerCase()));
+  (db.timeLog || []).forEach(t => { if (t.userEmail) set.add(t.userEmail.toLowerCase()); });
+  // Always include the current user even if collaborator list hasn't loaded yet
+  if (currentUserEmail()) set.add(currentUserEmail());
+  return Array.from(set).sort();
+}
+
+// ── Rooms (per property) ──────────────────────────────
+// Storage model:
+//   prop.rooms      = ['Kitchen', 'Garage', ...]            (legacy — kept in sync, used by project.loc)
+//   prop.roomsData  = { 'Kitchen': { floor, dimensions, notes, photo, photos, updatedAt }, ... }
+// Lookup keys are case-insensitive: we always look up by canonicalised name.
+function getPropertyRooms(propertyId) {
+  if (!propertyId) return [];
+  const prop = (db.properties||[]).find(p => p.id === propertyId);
+  if (!prop) return [];
+  return Array.isArray(prop.rooms) ? prop.rooms.slice() : [];
+}
+
+// Case-insensitive existence check
+function roomExists(propertyId, roomName) {
+  if (!propertyId || !roomName) return false;
+  const target = roomName.trim().toLowerCase();
+  return getPropertyRooms(propertyId).some(r => (r||'').toLowerCase() === target);
+}
+
+// Look up the metadata bucket for a room (case-insensitive). Returns {} if absent.
+function getRoomData(propertyId, roomName) {
+  const prop = (db.properties||[]).find(p => p.id === propertyId);
+  if (!prop || !roomName) return {};
+  if (!prop.roomsData || typeof prop.roomsData !== 'object') return {};
+  const target = roomName.trim().toLowerCase();
+  // Find the actual key used (preserves the user's casing)
+  for (const k of Object.keys(prop.roomsData)) {
+    if (k.toLowerCase() === target) return prop.roomsData[k] || {};
+  }
+  return {};
+}
+
+// Set / merge metadata for a room. Creates the bucket if missing.
+function setRoomData(propertyId, roomName, patch) {
+  const prop = (db.properties||[]).find(p => p.id === propertyId);
+  if (!prop || !roomName) return false;
+  if (!prop.roomsData || typeof prop.roomsData !== 'object') prop.roomsData = {};
+  const target = roomName.trim().toLowerCase();
+  // Find existing case-insensitive match, else use the trimmed name
+  let key = null;
+  for (const k of Object.keys(prop.roomsData)) {
+    if (k.toLowerCase() === target) { key = k; break; }
+  }
+  if (!key) key = roomName.trim();
+  prop.roomsData[key] = Object.assign({}, prop.roomsData[key] || {}, patch, { updatedAt: new Date().toISOString() });
+  saveDB();
+  return true;
+}
+
+// Add a room to a property (case-insensitive duplicate guard). Returns true if added.
+function addRoomToProperty(propertyId, roomName) {
+  const trimmed = (roomName || '').trim();
+  if (!trimmed || !propertyId) return false;
+  const prop = (db.properties||[]).find(p => p.id === propertyId);
+  if (!prop) return false;
+  if (!Array.isArray(prop.rooms)) prop.rooms = [];
+  if (prop.rooms.some(r => (r||'').toLowerCase() === trimmed.toLowerCase())) return false;
+  prop.rooms.push(trimmed);
+  // Keep alphabetical
+  prop.rooms.sort((a,b) => a.localeCompare(b));
+  // Initialise metadata bucket
+  if (!prop.roomsData || typeof prop.roomsData !== 'object') prop.roomsData = {};
+  if (!prop.roomsData[trimmed]) prop.roomsData[trimmed] = {};
+  saveDB();
+  return true;
+}
+
+function deleteRoomFromProperty(propertyId, roomName) {
+  const prop = (db.properties||[]).find(p => p.id === propertyId);
+  if (!prop || !Array.isArray(prop.rooms)) return;
+  // Block delete if any project of this property uses this room
+  const inUse = db.projects.some(pj => pj.propertyId === propertyId
+    && (pj.loc||'').trim().toLowerCase() === roomName.trim().toLowerCase());
+  if (inUse) {
+    alert('Cannot delete "' + roomName + '" — it is used by one or more projects of this property. Reassign those projects first.');
+    return;
+  }
+  if (!confirm('Delete room "' + roomName + '"? Its info, photo and notes will be lost.')) return;
+  prop.rooms = prop.rooms.filter(r => (r||'').toLowerCase() !== roomName.toLowerCase());
+  // Drop metadata bucket too
+  if (prop.roomsData && typeof prop.roomsData === 'object') {
+    const target = roomName.trim().toLowerCase();
+    Object.keys(prop.roomsData).forEach(k => {
+      if (k.toLowerCase() === target) delete prop.roomsData[k];
+    });
+  }
+  saveDB();
+  // If we were viewing that room's detail page, bounce back to rooms overview
+  if (currentRoomCtx && currentRoomCtx.propertyId === propertyId
+      && currentRoomCtx.roomName.toLowerCase() === roomName.toLowerCase()) {
+    currentRoomCtx = null;
+    showView('rooms');
+    return;
+  }
+  renderAll();
+}
+
+// Rename a room across the property AND every project that uses it
+function renameRoomOnProperty(propertyId, oldName, newName) {
+  const trimmed = (newName || '').trim();
+  if (!trimmed) return false;
+  const prop = (db.properties||[]).find(p => p.id === propertyId);
+  if (!prop || !Array.isArray(prop.rooms)) return false;
+  const idx = prop.rooms.findIndex(r => (r||'').toLowerCase() === oldName.toLowerCase());
+  if (idx === -1) return false;
+  // Don't rename to a room that already exists
+  if (prop.rooms.some((r,i) => i !== idx && (r||'').toLowerCase() === trimmed.toLowerCase())) {
+    alert('"' + trimmed + '" already exists for this property.');
+    return false;
+  }
+  prop.rooms[idx] = trimmed;
+  prop.rooms.sort((a,b) => a.localeCompare(b));
+  // Move metadata bucket to the new key
+  if (prop.roomsData && typeof prop.roomsData === 'object') {
+    const oldKey = Object.keys(prop.roomsData).find(k => k.toLowerCase() === oldName.toLowerCase());
+    if (oldKey) {
+      const data = prop.roomsData[oldKey];
+      delete prop.roomsData[oldKey];
+      prop.roomsData[trimmed] = data;
+    }
+  }
+  // Update any projects pointing at the old name
+  db.projects.forEach(pj => {
+    if (pj.propertyId === propertyId && (pj.loc||'').toLowerCase() === oldName.toLowerCase()) {
+      pj.loc = trimmed;
+    }
+  });
+  // If currently viewing this room, update the ctx
+  if (currentRoomCtx && currentRoomCtx.propertyId === propertyId
+      && currentRoomCtx.roomName.toLowerCase() === oldName.toLowerCase()) {
+    currentRoomCtx.roomName = trimmed;
+  }
+  saveDB();
+  renderAll();
+  // Re-render the detail page if we're on it
+  if (document.getElementById('view-room-detail')?.classList.contains('active')) {
+    renderRoomDetail();
+  }
+  return true;
+}
+
+// One-time migration: walk every project's `loc`, add it to its property's rooms list
+// if not already there. Idempotent — safe to call repeatedly.
+function migrateProjectLocsToRooms() {
+  let changed = false;
+  (db.projects || []).forEach(p => {
+    const room = (p.loc || '').trim();
+    if (!room || !p.propertyId) return;
+    const prop = (db.properties||[]).find(pp => pp.id === p.propertyId);
+    if (!prop) return;
+    if (!Array.isArray(prop.rooms)) prop.rooms = [];
+    if (!prop.rooms.some(r => (r||'').toLowerCase() === room.toLowerCase())) {
+      prop.rooms.push(room);
+      changed = true;
+    }
+  });
+  // Make sure every existing room has a metadata bucket
+  (db.properties||[]).forEach(p => {
+    if (!Array.isArray(p.rooms)) return;
+    if (!p.roomsData || typeof p.roomsData !== 'object') { p.roomsData = {}; changed = true; }
+    p.rooms.forEach(r => {
+      if (!r) return;
+      const exists = Object.keys(p.roomsData).some(k => k.toLowerCase() === r.toLowerCase());
+      if (!exists) { p.roomsData[r] = {}; changed = true; }
+    });
+  });
+  if (changed) {
+    (db.properties||[]).forEach(p => {
+      if (Array.isArray(p.rooms)) p.rooms.sort((a,b) => a.localeCompare(b));
+    });
+    saveDB();
+  }
+}
+
+const catClass = {
+  "DIY / Renovations": "cat-diy",
+  "Garden & Landscaping": "cat-garden",
+  "Maintenance": "cat-maint",
+  "Repairs": "cat-repair"
+};
+const statusClass = {
+  "Planned": "status-planned",
+  "In Progress": "status-progress",
+  "Done": "status-done",
+  "Paused": "status-paused"
+};
+const prioClass = { "High": "prio-high", "Medium": "prio-med", "Low": "prio-low" };
+
+// ── Views ──────────────────────────────────────────────
+const viewMeta = {
+  dashboard:   { title: 'Dashboard', sub: 'Overview of all your home projects' },
+  projects:    { title: 'Projects', sub: 'All your home improvement projects' },
+  costs:       { title: 'Costs', sub: 'All expenditures across projects' },
+  time:        { title: 'Time Log', sub: 'Hours tracked across projects' },
+  quotes:      { title: 'Quotes', sub: 'Supplier quotes and estimates per project' },
+  reports:     { title: 'Reports', sub: 'Summary by project and category' },
+  properties:  { title: 'Properties', sub: 'Manage addresses and properties you work on' },
+  rooms:       { title: 'Rooms', sub: 'Browse rooms across all properties' },
+  'room-detail': { title: 'Room', sub: '' },
+};
+
+// Holds the currently-open room on the room detail page
+// Shape: { propertyId, roomName }  or null
+let currentRoomCtx = null;
+
+function showView(name, ctx) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.bottom-nav-item').forEach(n => n.classList.remove('active'));
+  const target = document.getElementById('view-' + name);
+  if (!target) return;
+  target.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.getAttribute('onclick')?.includes("'"+name+"'")) n.classList.add('active');
+  });
+  document.querySelectorAll('.bottom-nav-item').forEach(n => {
+    if (n.getAttribute('data-view') === name) n.classList.add('active');
+  });
+  document.getElementById('page-title').textContent = viewMeta[name].title;
+  document.getElementById('page-subtitle').textContent = viewMeta[name].sub;
+
+  // Detail-view context handling
+  if (name === 'room-detail') {
+    currentRoomCtx = ctx || currentRoomCtx;
+    renderRoomDetail();
+    // Don't run renderAll — keeps the heavy renderer off the detail page
+    return;
+  }
+
+  renderAll();
+}
+
+function renderAll() {
+  renderDashboard();
+  renderProjects();
+  renderAllCosts();
+  renderAllTime();
+  renderAllQuotes();
+  renderReports();
+  renderProperties();
+  renderRoomsOverview();
+  populatePropertyFilters();
+}
+
+// ── Dashboard ──────────────────────────────────────────
+function renderDashboard() {
+  const totalSpent = db.costs.reduce((s,c) => s + Number(c.amount||0), 0);
+  const totalBudget = db.projects.reduce((s,p) => s + Number(p.budget||0), 0);
+  const totalHrs = db.timeLog.reduce((s,t) => s + Number(t.hours||0), 0);
+  const inProg = db.projects.filter(p => p.status === 'In Progress').length;
+  const done = db.projects.filter(p => p.status === 'Done').length;
+  const pct = totalBudget ? Math.round(totalSpent / totalBudget * 100) : 0;
+
+  document.getElementById('st-total').textContent = db.projects.length;
+  document.getElementById('st-status-summary').textContent = `${inProg} in progress · ${done} done`;
+  document.getElementById('st-spent').textContent = fmtEuro(totalSpent);
+  document.getElementById('st-budget-pct').textContent = totalBudget ? `${pct}% of ${fmtEuro(totalBudget)} budget` : 'no budget set';
+  document.getElementById('st-hours').textContent = fmtHrs(totalHrs);
+  document.getElementById('st-sessions').textContent = db.timeLog.length + ' sessions';
+  document.getElementById('st-invoices').textContent = db.costs.filter(c => c.photo).length;
+
+  const list = document.getElementById('dash-project-list');
+  if (!db.projects.length) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">🏠</div><div class="empty-title">No projects yet</div><div class="empty-text">Click "+ New Project" to get started</div></div>`;
+    return;
+  }
+  list.innerHTML = sortProjectsByStatus(db.projects).map(p => projectCardHTML(p)).join('');
+
+  // ── Property breakdown ──
+  const breakdown = document.getElementById('dash-property-breakdown');
+  if (!breakdown) return;
+  const props = db.properties || [];
+  if (!props.length) { breakdown.innerHTML = ''; return; }
+
+  // Get current sort state
+  const sortCol = window._propSortCol || 'name';
+  const sortDir = window._propSortDir || 'asc';
+
+  // Build data rows
+  const noPropertyProjects = db.projects.filter(p => !p.propertyId);
+  let rows = props.map(prop => {
+    const projs = db.projects.filter(p => p.propertyId === prop.id);
+    if (!projs.length) return null;
+    const spent = projs.reduce((s, p) => s + projectCosts(p.id), 0);
+    const hrs = projs.reduce((s, p) => s + projectHours(p.id), 0);
+    const budget = projs.reduce((s, p) => s + Number(p.budget||0), 0);
+    const inProg = projs.filter(p => p.status === 'In Progress').length;
+    const done = projs.filter(p => p.status === 'Done').length;
+    const planned = projs.filter(p => p.status === 'Planned').length;
+    const budgetPct = budget ? Math.min(Math.round(spent / budget * 100), 999) : null;
+    const over = budget && spent > budget;
+    return { prop, projs, spent, hrs, budget, inProg, done, planned, budgetPct, over };
+  }).filter(Boolean);
+
+  // Sort
+  rows.sort((a, b) => {
+    let av, bv;
+    if (sortCol === 'name')     { av = a.prop.name.toLowerCase(); bv = b.prop.name.toLowerCase(); }
+    if (sortCol === 'projects') { av = a.projs.length; bv = b.projs.length; }
+    if (sortCol === 'cost')     { av = a.spent; bv = b.spent; }
+    if (sortCol === 'time')     { av = a.hrs; bv = b.hrs; }
+    if (av < bv) return sortDir === 'asc' ? -1 : 1;
+    if (av > bv) return sortDir === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  function sortIcon(col) {
+    if (sortCol !== col) return '<span style="opacity:0.3;font-size:9px">⇅</span>';
+    return sortDir === 'asc' ? '<span style="font-size:9px">↑</span>' : '<span style="font-size:9px">↓</span>';
+  }
+
+  function thStyle(col) {
+    const active = sortCol === col;
+    return `style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:${active ? 'var(--ink)' : 'var(--ink3)'};text-align:center;cursor:pointer;user-select:none;padding:8px 4px" onclick="window._propSortCol='${col}';window._propSortDir=(window._propSortCol==='${col}'&&window._propSortDir==='asc'?'desc':'asc');window._propSortCol='${col}';renderDashboard()"`;
+  }
+
+  function toggleSort(col) {
+    return `onclick="window._propSortDir=(window._propSortCol==='${col}'&&window._propSortDir==='asc'?'desc':'asc');window._propSortCol='${col}';renderDashboard()"`;
+  }
+
+  const rowsHTML = rows.map(({ prop, projs, spent, hrs, budget, inProg, done, planned, budgetPct, over }) => `
+    <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border);gap:8px">
+      <div style="display:flex;align-items:center;gap:10px">
+        ${prop.photo ? `<div style="width:44px;height:44px;border-radius:8px;overflow:hidden;flex-shrink:0"><img src="${prop.photo}" style="width:100%;height:100%;object-fit:cover"></div>` : `<div style="width:44px;height:44px;border-radius:8px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🏘</div>`}
+        <div>
+          <div style="font-weight:600;font-size:13px">${prop.name}</div>
+          <div style="font-size:11px;color:var(--ink3)">${prop.address || ''}</div>
+        </div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-family:'DM Serif Display',serif;font-size:18px">${projs.length}</div>
+        <div style="font-size:10px;color:var(--ink3)">${planned ? planned+' pl' : ''}${inProg ? ' '+inProg+' act' : ''}${done ? ' '+done+' done' : ''}</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-family:'DM Serif Display',serif;font-size:18px;color:var(--accent)">${fmtEuro(spent)}</div>
+        ${budget ? `<div style="font-size:10px;color:${over ? '#c0392b' : 'var(--ink3)'};">${budgetPct}% af ${fmtEuro(budget)}</div>` : '<div style="font-size:10px;color:var(--ink3)">—</div>'}
+      </div>
+      <div style="text-align:center">
+        <div style="font-family:'DM Serif Display',serif;font-size:18px;color:var(--blue)">${fmtHrs(hrs)}</div>
+        <div style="font-size:10px;color:var(--ink3)">tími</div>
+      </div>
+      <div style="text-align:center">
+        <button class="btn sm ghost" onclick="document.getElementById('filter-property').value='${prop.id}';showView('projects')" style="font-size:11px">Skoða →</button>
+      </div>
+    </div>`).join('');
+
+  breakdown.innerHTML = `
+  <div style="margin-bottom:24px">
+    <div style="font-family:'DM Serif Display',serif;font-size:18px;margin-bottom:12px">Eignir — yfirlit</div>
+    <div class="card" style="overflow:hidden">
+      <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;padding:4px 16px;background:var(--surface2);gap:8px;border-bottom:1px solid var(--border)">
+        <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--ink3);cursor:pointer;padding:8px 0;user-select:none" ${toggleSort('name')}>Eign ${sortIcon('name')}</div>
+        <div ${thStyle('projects')}>Verkefni ${sortIcon('projects')}</div>
+        <div ${thStyle('cost')}>Kostnaður ${sortIcon('cost')}</div>
+        <div ${thStyle('time')}>Tími ${sortIcon('time')}</div>
+        <div></div>
+      </div>
+      ${rowsHTML}
+      ${noPropertyProjects.length ? `
+      <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;align-items:center;padding:12px 16px;gap:8px;background:var(--bg)">
+        <div style="font-size:12px;color:var(--ink3);font-style:italic">Engin eign tengd</div>
+        <div style="text-align:center;font-size:12px;color:var(--ink3)">${noPropertyProjects.length}</div>
+        <div></div><div></div><div></div>
+      </div>` : ''}
+    </div>
+  </div>`;
+}
+
+// ── Project card HTML ──────────────────────────────────
+function projectCardHTML(p) {
+  const spent = projectCosts(p.id);
+  const budget = Number(p.budget || 0);
+  const hrs = projectHours(p.id);
+  const invs = projectInvoices(p.id);
+  const pct = budget ? Math.min(Math.round(spent / budget * 100), 200) : 0;
+  const over = budget && spent > budget;
+  const fillClass = !budget ? 'good' : over ? 'over' : pct > 80 ? 'warn' : 'good';
+
+  return `
+  <div class="project-card">
+    <div class="project-card-header">
+      <div>
+        <div class="project-name">${p.name}</div>
+        <div class="project-meta">
+          ${p.loc ? `<span style="font-size:11px;color:var(--ink3)">📍 ${p.loc}</span>` : ''}
+          ${p.propertyId ? (() => { const prop = (db.properties||[]).find(x => x.id === p.propertyId); return prop ? `<span style="font-size:11px;color:var(--blue);background:var(--blue-bg);padding:1px 7px;border-radius:10px;font-weight:500">🏘 ${prop.name}</span>` : ''; })() : ''}
+          <span class="badge ${catClass[p.cat]||''}">${p.cat}</span>
+          <span class="badge ${statusClass[p.status]||''}">${p.status}</span>
+          <span class="badge ${prioClass[p.prio]||''}">${p.prio}</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <button class="btn sm ghost" onclick="openCostModal(${p.id})" title="Log cost">💰</button>
+        <button class="btn sm ghost" onclick="openTimeModal(${p.id})" title="Log time">⏱</button>
+        <button class="btn sm ghost" onclick="openQuoteModal(${p.id})" title="Add quote">📄</button>
+        <button class="btn sm ghost" onclick="openProjectModal(${p.id})" title="Edit">✏️</button>
+        <button class="btn sm ghost danger" onclick="deleteProject(${p.id})" title="Delete">🗑</button>
+      </div>
+    </div>
+    <div class="project-card-body">
+      <div class="pcard-section" style="cursor:pointer" onclick="openProjectCosts(${p.id})" title="Smelltu til að sjá kostnaðarlista">
+        <div class="pcard-section-label">💰 Costs <span style="font-size:10px;color:var(--ink3);font-weight:400">— smelltu til að sjá</span></div>
+        <div class="cost-row"><span class="cost-label">Spent</span><span class="cost-val ${over ? 'over' : ''}">${fmtEuro(spent)}</span></div>
+        <div class="cost-row"><span class="cost-label">Budget</span><span class="cost-val">${budget ? fmtEuro(budget) : '—'}</span></div>
+        ${budget ? `<div class="progress-wrap"><div class="progress-bar"><div class="progress-fill ${fillClass}" style="width:${Math.min(pct,100)}%"></div></div><div class="progress-label">${pct}% used${over ? ' · OVER BUDGET' : ''}</div></div>` : ''}
+        <div style="margin-top:8px;display:flex;gap:6px">
+          <button class="btn sm" onclick="event.stopPropagation();openCostModal(${p.id})" style="font-size:11px">+ Add cost</button>
+        </div>
+      </div>
+      <div class="pcard-section">
+        <div class="pcard-section-label">⏱ Time</div>
+        <div class="time-big">${fmtHrs(hrs)}</div>
+        <div style="font-size:11px;color:var(--ink3);margin-top:3px">${db.timeLog.filter(t => t.projectId === p.id).length} sessions</div>
+        ${(() => {
+          const byUser = {};
+          db.timeLog.filter(t => t.projectId === p.id).forEach(t => {
+            const e = (t.userEmail || '').toLowerCase() || '__unassigned__';
+            byUser[e] = (byUser[e] || 0) + Number(t.hours || 0);
+          });
+          const keys = Object.keys(byUser);
+          if (keys.length <= 1) return '';
+          return `<div style="font-size:11px;color:var(--ink2);margin-top:6px;display:flex;flex-wrap:wrap;gap:6px">${keys.map(e => `<span style="background:var(--surface2);padding:2px 6px;border-radius:8px"><strong>${e === '__unassigned__' ? 'Unassigned' : userDisplayName(e)}:</strong> ${fmtHrs(byUser[e])}</span>`).join('')}</div>`;
+        })()}
+        ${p.start || p.due ? `<div style="font-size:11px;color:var(--ink3);margin-top:6px">${p.start ? fmtDate(p.start) : '?'} → ${p.due ? fmtDate(p.due) : '?'}</div>` : ''}
+        <div style="margin-top:8px">
+          <button class="btn sm" onclick="openTimeModal(${p.id})" style="font-size:11px">+ Log time</button>
+        </div>
+      </div>
+      <div class="pcard-section">
+        <div class="pcard-section-label">📄 Quotes</div>
+        ${projectQuotes(p.id).length === 0 ? `<div style="font-size:11px;color:var(--ink3);margin-bottom:8px">No quotes yet</div>` :
+          projectQuotes(p.id).map(q => `
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 8px;border-radius:6px;background:var(--bg);margin-bottom:4px;gap:6px;cursor:pointer" onclick="event.stopPropagation();openQuoteModal(${q.projectId}, ${q.id})" title="Click to edit">
+              ${q.photo ? `<div style="width:28px;height:28px;border-radius:4px;overflow:hidden;flex-shrink:0;cursor:pointer" onclick="event.stopPropagation();openLightbox('${q.photo}')"><img src="${q.photo}" style="width:100%;height:100%;object-fit:cover"></div>` : '<div style="width:28px;height:28px;border-radius:4px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">📄</div>'}
+              <div style="flex:1;min-width:0">
+                <div style="font-size:11px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${q.supplier}</div>
+                <div style="font-size:10px;color:var(--ink3)">${fmtEuro(q.amount)}</div>
+              </div>
+              ${q.accepted ? '<span style="font-size:10px;background:var(--green-bg);color:var(--green);padding:1px 6px;border-radius:10px;font-weight:500;flex-shrink:0">✓ Accepted</span>' : ''}
+            </div>`).join('')}
+        <button class="btn sm" onclick="openQuoteModal(${p.id})" style="font-size:11px;margin-top:4px">+ Add quote</button>
+        ${p.notes ? `<div style="font-size:11px;color:var(--ink2);margin-top:8px;font-style:italic">"${p.notes.slice(0,60)}${p.notes.length>60?'…':''}"</div>` : ''}
+      </div>
+    </div>
+    <div class="project-card-footer">
+      ${p.contractor ? `<span style="font-size:11px;color:var(--ink3)">👷 ${p.contractor}</span>` : ''}
+    </div>
+  </div>`;
+}
+
+// ── Projects view ──────────────────────────────────────
+// Project sort: active first, planned next, done last. Stable within each group.
+const PROJECT_STATUS_ORDER = { 'In Progress': 0, 'Planned': 1, 'Done': 2 };
+function sortProjectsByStatus(arr) {
+  return arr.slice().sort((a, b) => {
+    const ra = PROJECT_STATUS_ORDER[a.status] ?? 99;
+    const rb = PROJECT_STATUS_ORDER[b.status] ?? 99;
+    return ra - rb;
+  });
+}
+
+function renderProjects() {
+  const cat = document.getElementById('filter-cat')?.value || '';
+  const status = document.getElementById('filter-status')?.value || '';
+  const propId = document.getElementById('filter-property')?.value || '';
+  const filtered = db.projects.filter(p =>
+    (!cat || p.cat === cat) &&
+    (!status || p.status === status) &&
+    (!propId || String(p.propertyId) === propId)
+  );
+  const sorted = sortProjectsByStatus(filtered);
+  const list = document.getElementById('projects-list');
+  if (!list) return;
+  if (!sorted.length) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-title">No projects</div><div class="empty-text">Add your first project above</div></div>`;
+    return;
+  }
+  list.innerHTML = '<div class="projects-grid">' + sorted.map(p => projectCardHTML(p)).join('') + '</div>';
+}
+
+// ── Costs view ─────────────────────────────────────────
+function renderAllCosts() {
+  const list = document.getElementById('all-costs-list');
+  if (!list) return;
+  if (!db.costs.length) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">💶</div><div class="empty-title">No costs logged</div><div class="empty-text">Click "+ Add Cost" to record expenditure</div></div>`;
+    return;
+  }
+  const sorted = [...db.costs].sort((a,b) => (b.date||'') > (a.date||'') ? 1 : -1);
+  const total = db.costs.reduce((s,c) => s + Number(c.amount||0), 0);
+  const grouped = {};
+  sorted.forEach(c => {
+    const proj = db.projects.find(p => p.id === c.projectId);
+    const key = proj ? proj.name : 'Unknown Project';
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(c);
+  });
+
+  let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:12px 14px;background:var(--accent-bg);border-radius:8px;border:1px solid rgba(200,90,42,0.15)">
+    <span style="font-size:13px;font-weight:500;color:var(--accent)">Total all projects</span>
+    <span style="font-family:'DM Serif Display',serif;font-size:20px;color:var(--accent)">${fmtEuro(total)}</span>
+  </div>`;
+
+  for (const [projName, costs] of Object.entries(grouped)) {
+    const subtotal = costs.reduce((s,c) => s + Number(c.amount||0), 0);
+    html += `<div style="margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div class="section-label">${projName}</div>
+        <span style="font-size:12px;font-weight:600;color:var(--ink2)">${fmtEuro(subtotal)}</span>
+      </div>
+      <div class="cost-entries">
+        ${costs.map(c => `
+          <div class="cost-entry">
+            ${c.photo ? `<div style="width:32px;height:32px;border-radius:4px;overflow:hidden;margin-right:8px;flex-shrink:0;cursor:pointer" onclick="openLightbox('${c.photo}')"><img src="${c.photo}" style="width:100%;height:100%;object-fit:cover"></div>` : ''}
+            <span class="ce-label">${c.desc} <span style="font-size:10px;background:var(--surface2);padding:1px 6px;border-radius:10px;margin-left:4px">${c.cat}</span></span>
+            <span class="ce-date">${fmtDate(c.date)}</span>
+            <span class="ce-amount">${fmtEuro(c.amount)}</span>
+            <button class="ce-del" onclick="deleteCost(${c.id})">✕</button>
+          </div>
+        `).join('')}
+      </div>
+    </div>`;
+  }
+  list.innerHTML = html;
+}
+
+// ── Time view ──────────────────────────────────────────
+// ── Time Log: tabs + filters ─────────────────────────
+let timeLogTab = 'grouped'; // 'grouped' or 'timeline'
+
+// Timeline filters
+// Each filter is an array of selected values; empty = no filter
+const tlogFilters = {
+  from: '',           // YYYY-MM-DD
+  to: '',             // YYYY-MM-DD
+  users: [],          // array of emails (lowercase)
+  projects: [],       // array of project ids (numbers)
+  properties: [],     // array of property ids (numbers); 0 = "no property"
+  search: ''          // free-text search applied to description
+};
+
+function setTimeLogTab(tab) {
+  timeLogTab = tab;
+  // Update visual state of tab buttons
+  const g = document.getElementById('tlog-tab-grouped');
+  const t = document.getElementById('tlog-tab-timeline');
+  if (g && t) {
+    if (tab === 'grouped') {
+      g.classList.remove('ghost');
+      t.classList.add('ghost');
+    } else {
+      g.classList.add('ghost');
+      t.classList.remove('ghost');
+    }
+  }
+  renderAllTime();
+}
+
+// Toggle a value in a filter array. If shift/ctrl/meta key isn't held → single-select (replace).
+function toggleTlogFilter(key, value, evt) {
+  const arr = tlogFilters[key];
+  const isMulti = evt && (evt.ctrlKey || evt.metaKey || evt.shiftKey);
+  // Normalise value type for comparison
+  const idx = arr.findIndex(x => String(x) === String(value));
+  if (isMulti) {
+    if (idx >= 0) arr.splice(idx, 1); else arr.push(value);
+  } else {
+    // Single-select: if already the only value, clear it; else replace
+    if (idx >= 0 && arr.length === 1) {
+      tlogFilters[key] = [];
+    } else {
+      tlogFilters[key] = [value];
+    }
+  }
+  renderAllTime();
+}
+
+function clearTlogFilter(key) {
+  if (key === 'search') tlogFilters.search = '';
+  else if (key) tlogFilters[key] = (key === 'from' || key === 'to') ? '' : [];
+  else {
+    tlogFilters.from = ''; tlogFilters.to = '';
+    tlogFilters.users = []; tlogFilters.projects = []; tlogFilters.properties = [];
+    tlogFilters.search = '';
+  }
+  renderAllTime();
+}
+
+function setTlogDateRange(which, value) {
+  tlogFilters[which] = value || '';
+  renderAllTime();
+}
+
+// Apply all timeline filters to a list of entries
+function applyTlogFilters(entries) {
+  const q = (tlogFilters.search || '').trim().toLowerCase();
+  return entries.filter(t => {
+    if (tlogFilters.from && (t.date || '') < tlogFilters.from) return false;
+    if (tlogFilters.to && (t.date || '') > tlogFilters.to) return false;
+    if (tlogFilters.users.length && !tlogFilters.users.includes((t.userEmail||'').toLowerCase())) return false;
+    if (tlogFilters.projects.length && !tlogFilters.projects.includes(t.projectId)) return false;
+    if (tlogFilters.properties.length) {
+      const proj = db.projects.find(p => p.id === t.projectId);
+      const propId = proj ? (proj.propertyId || 0) : 0;
+      if (!tlogFilters.properties.includes(propId)) return false;
+    }
+    if (q) {
+      const desc = (t.notes || '').toLowerCase();
+      if (!desc.includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+// Used by the search box's oninput — preserves cursor position
+function setTlogSearch(value) {
+  tlogFilters.search = value || '';
+  // Re-render but try to restore focus on the search input
+  renderAllTime();
+  const el = document.getElementById('tlog-search-input');
+  if (el) {
+    el.focus();
+    // Move cursor to end
+    const v = el.value; el.value = ''; el.value = v;
+  }
+}
+
+// Add or remove a value from a multi-select dropdown filter
+function toggleDropdownFilter(key, value, checked) {
+  const arr = tlogFilters[key];
+  // Normalise comparison: numbers as numbers, strings as strings
+  const idx = arr.findIndex(x => String(x) === String(value));
+  if (checked) {
+    if (idx === -1) arr.push(value);
+  } else {
+    if (idx !== -1) arr.splice(idx, 1);
+  }
+  renderAllTime();
+}
+
+// Open/close a column filter dropdown panel
+function toggleFilterDropdown(id, evt) {
+  if (evt) evt.stopPropagation();
+  // Close any other open dropdowns
+  document.querySelectorAll('.tlog-dropdown-panel').forEach(p => {
+    if (p.id !== id) p.style.display = 'none';
+  });
+  const panel = document.getElementById(id);
+  if (panel) panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+}
+
+// Close all dropdowns when clicking outside
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.tlog-dropdown')) {
+    document.querySelectorAll('.tlog-dropdown-panel').forEach(p => p.style.display = 'none');
+  }
+});
+
+// Pretty date with day-of-week, e.g. "Mon, 5 May 2026"
+function fmtDateLong(iso) {
+  if (!iso) return '';
+  const d = new Date(iso + 'T00:00:00');
+  if (isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString('is-IS', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function renderAllTime() {
+  if (timeLogTab === 'timeline') return renderTimeLogTimeline();
+  return renderTimeLogGrouped();
+}
+
+function renderTimeLogGrouped() {
+  const list = document.getElementById('all-time-list');
+  if (!list) return;
+
+  // Filter helpers
+  const allEntries = db.timeLog || [];
+  const filtered = timeLogUserFilter
+    ? allEntries.filter(t => (t.userEmail||'').toLowerCase() === timeLogUserFilter.toLowerCase())
+    : allEntries;
+
+  // Filter bar (always show, even if empty, so user can change filter)
+  const users = knownUserEmails();
+  const filterOptions = [`<option value=""${timeLogUserFilter==='' ? ' selected' : ''}>All people</option>`]
+    .concat(users.map(e => {
+      const sel = e === timeLogUserFilter.toLowerCase() ? ' selected' : '';
+      return `<option value="${e}"${sel}>${userDisplayName(e)}</option>`;
+    })).join('');
+
+  let filterBar = `<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+    <span style="font-size:12px;color:var(--ink2);font-weight:500">Filter by person:</span>
+    <select onchange="timeLogUserFilter=this.value;renderAll()" style="padding:6px 10px;border:1px solid var(--border2);border-radius:6px;font-size:13px;font-family:inherit;background:var(--surface)">${filterOptions}</select>
+    ${currentUserEmail() ? `<button class="btn sm" onclick="timeLogUserFilter='${currentUserEmail()}';renderAll()">Only mine</button>` : ''}
+    ${timeLogUserFilter ? `<button class="btn sm ghost" onclick="timeLogUserFilter='';renderAll()">Clear filter</button>` : ''}
+  </div>`;
+
+  if (!filtered.length) {
+    list.innerHTML = filterBar +
+      `<div class="empty-state"><div class="empty-icon">⏱</div><div class="empty-title">No time logged${timeLogUserFilter ? ' for this person' : ''}</div><div class="empty-text">${timeLogUserFilter ? 'Try a different filter, or' : ''} click "+ Log Time" to record hours</div></div>`;
+    return;
+  }
+
+  const totalHrs = filtered.reduce((s,t) => s + Number(t.hours||0), 0);
+  const sorted = [...filtered].sort((a,b) => {
+    const da = (b.date||'') + ' ' + (b.time||''); const db_ = (a.date||'') + ' ' + (a.time||'');
+    return da > db_ ? 1 : -1;
+  });
+
+  // Per-user totals across the (filtered) view
+  const perUser = {};
+  filtered.forEach(t => {
+    const e = (t.userEmail || '').toLowerCase() || '__unassigned__';
+    perUser[e] = (perUser[e] || 0) + Number(t.hours || 0);
+  });
+  const perUserKeys = Object.keys(perUser).sort();
+
+  const grouped = {};
+  sorted.forEach(t => {
+    const proj = db.projects.find(p => p.id === t.projectId);
+    const key = proj ? proj.name : 'Unknown';
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(t);
+  });
+
+  let html = filterBar + `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:12px 14px;background:var(--blue-bg);border-radius:8px;border:1px solid rgba(42,90,154,0.12)">
+    <span style="font-size:13px;font-weight:500;color:var(--blue)">Total hours${timeLogUserFilter ? ' (' + userDisplayName(timeLogUserFilter) + ')' : ' all projects'}</span>
+    <span style="font-family:'DM Serif Display',serif;font-size:20px;color:var(--blue)">${fmtHrs(totalHrs)}</span>
+  </div>`;
+
+  // Per-user breakdown (only when not already filtered to one person, and there's more than one user)
+  if (!timeLogUserFilter && perUserKeys.length > 1) {
+    html += `<div style="margin-bottom:14px;padding:10px 14px;background:var(--surface2);border-radius:8px">
+      <div class="section-label" style="margin-bottom:6px">By person</div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px">
+        ${perUserKeys.map(e => `<div style="display:flex;align-items:center;gap:6px;font-size:13px"><span style="color:var(--ink2)">${e === '__unassigned__' ? 'Unassigned' : userDisplayName(e)}:</span><span style="font-weight:600">${fmtHrs(perUser[e])}</span></div>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  for (const [projName, entries] of Object.entries(grouped)) {
+    const subtotal = entries.reduce((s,t) => s + Number(t.hours||0), 0);
+    html += `<div style="margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div class="section-label">${projName}</div>
+        <span style="font-size:12px;font-weight:600;color:var(--ink2)">${fmtHrs(subtotal)}</span>
+      </div>
+      <div class="time-entries">
+        ${entries.map(t => {
+          const canEdit = canEditTimeEntry(t);
+          const userBadge = t.userEmail ? `<span style="font-size:10px;background:var(--surface2);color:var(--ink2);padding:2px 6px;border-radius:8px;font-weight:500;margin-right:6px">${userDisplayName(t.userEmail)}</span>` : '';
+          return `
+          <div class="time-entry" ${canEdit ? `style="cursor:pointer" onclick="openTimeModal(${t.projectId}, ${t.id})" title="Click to edit"` : ''}>
+            <span class="te-date">${fmtDate(t.date)}${timeRangeStr(t) ? ' · ' + timeRangeStr(t) : ''}</span>
+            <span style="flex:1;padding:0 10px;color:var(--ink2)">${userBadge}${t.notes || '—'}</span>
+            <span class="te-hrs">${fmtHrs(t.hours)}</span>
+            ${canEdit ? `<button class="te-del" onclick="event.stopPropagation();deleteTime(${t.id})">✕</button>` : `<span class="te-del" style="opacity:0.3;cursor:not-allowed" title="Only ${userDisplayName(t.userEmail)} or admin can delete">✕</span>`}
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }
+  list.innerHTML = html;
+}
+
+// Timeline view sort state — default newest-first by date+from-time
+let tlogSort = { key: 'date', dir: 'desc' };
+
+function setTlogSort(key) {
+  if (tlogSort.key === key) {
+    tlogSort.dir = tlogSort.dir === 'asc' ? 'desc' : 'asc';
+  } else {
+    tlogSort.key = key;
+    tlogSort.dir = 'asc';
+  }
+  renderAllTime();
+}
+
+function tlogSortIcon(key) {
+  if (tlogSort.key !== key) return '<span style="opacity:0.25">↕</span>';
+  return tlogSort.dir === 'asc' ? '<span style="color:var(--ink)">↑</span>' : '<span style="color:var(--ink)">↓</span>';
+}
+
+function renderTimeLogTimeline() {
+  const list = document.getElementById('all-time-list');
+  if (!list) return;
+
+  const allEntries = db.timeLog || [];
+  const filtered = applyTlogFilters(allEntries);
+  const totalHrs = filtered.reduce((s,t) => s + Number(t.hours||0), 0);
+
+  const knownUsers = knownUserEmails();
+  const knownProjects = [...db.projects].sort((a,b) => (a.name||'').localeCompare(b.name||''));
+  const knownProperties = [{id:0, name:'Engin eign'}].concat([...(db.properties||[])].sort((a,b)=> (a.name||'').localeCompare(b.name||'')));
+
+  // ── Build a column-filter dropdown (label + checkbox panel) ──
+  // items: [{value, label}, ...]
+  function dropdown(filterKey, items, label, panelId) {
+    const selected = tlogFilters[filterKey];
+    const count = selected.length;
+    const labelText = count === 0 ? 'All' : (count === 1
+      ? (items.find(i => String(i.value) === String(selected[0])) || {}).label || '1 selected'
+      : count + ' selected');
+    const checkboxes = items.map(it => {
+      const checked = selected.some(s => String(s) === String(it.value));
+      const valueAttr = typeof it.value === 'number' ? it.value : `'${String(it.value).replace(/'/g, "\\'")}'`;
+      return `<label style="display:flex;align-items:center;gap:6px;padding:4px 8px;cursor:pointer;border-radius:4px;font-size:12px;color:var(--ink2)" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+        <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleDropdownFilter('${filterKey}', ${valueAttr}, this.checked)" style="margin:0;cursor:pointer">
+        <span>${it.label}</span>
+      </label>`;
+    }).join('');
+    return `<div class="tlog-dropdown" style="position:relative;display:inline-block;margin-top:4px;font-weight:400;text-transform:none;letter-spacing:normal">
+      <button onclick="toggleFilterDropdown('${panelId}', event)" style="background:${count ? 'var(--blue-bg)' : 'var(--surface)'};border:1px solid ${count ? 'var(--blue)' : 'var(--border2)'};color:${count ? 'var(--blue)' : 'var(--ink2)'};padding:3px 8px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px;font-weight:${count ? '600' : '400'}">
+        <span>${labelText}</span>
+        <span style="font-size:9px">▼</span>
+      </button>
+      <div id="${panelId}" class="tlog-dropdown-panel" style="display:none;position:absolute;top:100%;left:0;margin-top:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.08);min-width:180px;max-height:280px;overflow-y:auto;z-index:50;padding:6px">
+        ${count ? `<div style="display:flex;justify-content:flex-end;padding:2px 6px;border-bottom:1px solid var(--border);margin-bottom:4px"><button class="btn sm ghost" onclick="event.stopPropagation();clearTlogFilter('${filterKey}')" style="font-size:10px;padding:2px 6px">Clear</button></div>` : ''}
+        ${checkboxes || `<div style="padding:6px 8px;font-size:11px;color:var(--ink3);font-style:italic">No options</div>`}
+      </div>
+    </div>`;
+  }
+
+  // ── Top bar: search box + date range + clear-all ──
+  const anyActive = tlogFilters.from || tlogFilters.to || tlogFilters.users.length || tlogFilters.projects.length || tlogFilters.properties.length || tlogFilters.search;
+  const searchVal = (tlogFilters.search || '').replace(/"/g, '&quot;');
+  const topBar = `<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+    <div style="position:relative;flex:1;min-width:220px;max-width:360px">
+      <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--ink3);pointer-events:none">🔍</span>
+      <input id="tlog-search-input" type="text" placeholder="Search descriptions..." value="${searchVal}"
+        oninput="setTlogSearch(this.value)"
+        style="width:100%;padding:7px 30px 7px 30px;border:1px solid var(--border2);border-radius:6px;font-size:13px;font-family:inherit;background:var(--surface)">
+      ${tlogFilters.search ? `<button onclick="clearTlogFilter('search')" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--ink3);cursor:pointer;font-size:14px;padding:2px 6px">✕</button>` : ''}
+    </div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <span style="font-size:11px;color:var(--ink3)">Date:</span>
+      <input type="date" value="${tlogFilters.from}" onchange="setTlogDateRange('from', this.value)" style="padding:5px 8px;border:1px solid var(--border2);border-radius:6px;font-size:12px;font-family:inherit">
+      <span style="font-size:11px;color:var(--ink3)">→</span>
+      <input type="date" value="${tlogFilters.to}" onchange="setTlogDateRange('to', this.value)" style="padding:5px 8px;border:1px solid var(--border2);border-radius:6px;font-size:12px;font-family:inherit">
+    </div>
+    ${anyActive ? `<button class="btn sm" onclick="clearTlogFilter()" style="font-size:11px">Clear all</button>` : ''}
+  </div>`;
+
+  if (!filtered.length) {
+    list.innerHTML = topBar +
+      `<div class="empty-state"><div class="empty-icon">⏱</div><div class="empty-title">No matching entries</div><div class="empty-text">${anyActive ? 'Try adjusting or clearing the filters above' : 'Click "+ Log Time" to record hours'}</div></div>`;
+    return;
+  }
+
+  // Build a "displayable" record per entry, then sort by selected key
+  const rows = filtered.map(t => {
+    const proj = db.projects.find(p => p.id === t.projectId);
+    const prop = proj && proj.propertyId ? (db.properties||[]).find(pr => pr.id === proj.propertyId) : null;
+    return {
+      raw: t,
+      date: t.date || '',
+      timeFrom: t.timeFrom || t.time || '',
+      timeTo: t.timeTo || '',
+      property: prop ? prop.name : '',
+      project: proj ? proj.name : '',
+      user: userDisplayName(t.userEmail),
+      notes: t.notes || '',
+      hours: Number(t.hours || 0)
+    };
+  });
+
+  const dir = tlogSort.dir === 'asc' ? 1 : -1;
+  rows.sort((a, b) => {
+    let av, bv;
+    switch (tlogSort.key) {
+      case 'date':     av = a.date + ' ' + (a.timeFrom || '00:00'); bv = b.date + ' ' + (b.timeFrom || '00:00'); break;
+      case 'time':     av = a.timeFrom; bv = b.timeFrom; break;
+      case 'property': av = a.property; bv = b.property; break;
+      case 'project':  av = a.project; bv = b.project; break;
+      case 'user':     av = a.user; bv = b.user; break;
+      case 'notes':    av = a.notes; bv = b.notes; break;
+      case 'hours':    av = a.hours; bv = b.hours; break;
+      default:         av = a.date; bv = b.date;
+    }
+    if (av < bv) return -1 * dir;
+    if (av > bv) return 1 * dir;
+    return 0;
+  });
+
+  // Header cell: clickable label for sort + (optional) filter dropdown beneath
+  const th = (key, label, filterHtml) =>
+    `<th style="text-align:left;padding:8px 10px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink3);background:var(--surface2);border-bottom:1px solid var(--border);user-select:none;white-space:nowrap;vertical-align:top">
+      <div onclick="setTlogSort('${key}')" style="cursor:pointer;display:flex;align-items:center;gap:4px">${label} ${tlogSortIcon(key)}</div>
+      ${filterHtml || ''}
+    </th>`;
+
+  const propertyItems = knownProperties.map(p => ({ value: p.id, label: p.name }));
+  const projectItems = knownProjects.map(p => ({ value: p.id, label: p.name }));
+  const userItems = knownUsers.map(e => ({ value: e, label: userDisplayName(e) }));
+
+  let html = topBar +
+    `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:12px 14px;background:var(--blue-bg);border-radius:8px;border:1px solid rgba(42,90,154,0.12)">
+      <span style="font-size:13px;font-weight:500;color:var(--blue)">${filtered.length} ${filtered.length === 1 ? 'entry' : 'entries'} matching</span>
+      <span style="font-family:'DM Serif Display',serif;font-size:20px;color:var(--blue)">${fmtHrs(totalHrs)}</span>
+    </div>` +
+    `<div class="card" style="overflow:visible">
+      <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead>
+          <tr>
+            ${th('date','Date','')}
+            ${th('time','Time','')}
+            ${th('property','Property', dropdown('properties', propertyItems, 'Property', 'tlog-dd-property'))}
+            ${th('project','Project', dropdown('projects', projectItems, 'Project', 'tlog-dd-project'))}
+            ${th('user','User', dropdown('users', userItems, 'User', 'tlog-dd-user'))}
+            ${th('notes','Description','')}
+            ${th('hours','Hours','')}
+            <th style="background:var(--surface2);border-bottom:1px solid var(--border);width:32px"></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(r => {
+            const t = r.raw;
+            const canEdit = canEditTimeEntry(t);
+            const range = timeRangeStr(t);
+            return `<tr ${canEdit ? `onclick="openTimeModal(${t.projectId}, ${t.id})" style="cursor:pointer" title="Click to edit"` : ''}
+              onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+              <td style="padding:8px 10px;border-bottom:1px solid var(--border);white-space:nowrap;color:var(--ink2)">${r.date ? fmtDate(r.date) : '—'}</td>
+              <td style="padding:8px 10px;border-bottom:1px solid var(--border);white-space:nowrap;font-family:monospace;font-size:12px;color:var(--ink2)">${range || '—'}</td>
+              <td style="padding:8px 10px;border-bottom:1px solid var(--border);color:var(--ink2)">${r.property || '<span style="color:var(--ink3);font-style:italic">—</span>'}</td>
+              <td style="padding:8px 10px;border-bottom:1px solid var(--border);color:var(--ink)">${r.project}</td>
+              <td style="padding:8px 10px;border-bottom:1px solid var(--border);color:var(--ink2)">${r.user}</td>
+              <td style="padding:8px 10px;border-bottom:1px solid var(--border);color:var(--ink2)">${r.notes || '<span style="color:var(--ink3);font-style:italic">—</span>'}</td>
+              <td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:right;font-weight:600;white-space:nowrap">${fmtHrs(r.hours)}</td>
+              <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right">
+                ${canEdit ? `<button class="te-del" onclick="event.stopPropagation();deleteTime(${t.id})" style="position:static">✕</button>` : `<span class="te-del" style="position:static;opacity:0.3;cursor:not-allowed" title="Only ${userDisplayName(t.userEmail)} or admin can delete">✕</span>`}
+              </td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+      </div>
+    </div>`;
+
+  list.innerHTML = html;
+}
+
+// ── Reports view ───────────────────────────────────────
+function renderReports() {
+  const el = document.getElementById('reports-content');
+  if (!el) return;
+
+  const totalBudget = db.projects.reduce((s,p) => s + Number(p.budget||0), 0);
+  const totalSpent = db.costs.reduce((s,c) => s + Number(c.amount||0), 0);
+  const totalHrs = db.timeLog.reduce((s,t) => s + Number(t.hours||0), 0);
+
+  const byStatus = ['Planned','In Progress','Done','Paused'].map(s => ({
+    label: s, count: db.projects.filter(p => p.status === s).length
+  }));
+
+  const byCat = ['DIY / Renovations','Garden & Landscaping','Maintenance','Repairs'].map(c => ({
+    label: c,
+    spent: db.costs.filter(x => {
+      const proj = db.projects.find(p => p.id === x.projectId);
+      return proj && proj.cat === c;
+    }).reduce((s,x) => s + Number(x.amount||0), 0),
+    hrs: db.timeLog.filter(x => {
+      const proj = db.projects.find(p => p.id === x.projectId);
+      return proj && proj.cat === c;
+    }).reduce((s,x) => s + Number(x.hours||0), 0)
+  })).filter(c => c.spent > 0 || c.hrs > 0);
+
+  const perProject = db.projects.map(p => ({
+    p, spent: projectCosts(p.id), hrs: projectHours(p.id)
+  })).sort((a,b) => b.spent - a.spent);
+
+  el.innerHTML = `
+  <div class="report-grid">
+    <div class="report-card">
+      <h4>Budget Overview</h4>
+      <div class="report-row"><span>Total Budget</span><span class="rr-val">${fmtEuro(totalBudget)}</span></div>
+      <div class="report-row"><span>Total Spent</span><span class="rr-val">${fmtEuro(totalSpent)}</span></div>
+      <div class="report-row"><span>Remaining</span><span class="rr-val" style="color:${totalSpent > totalBudget ? '#c0392b' : 'var(--green)'}">${fmtEuro(totalBudget - totalSpent)}</span></div>
+      <div class="report-row"><span>Total Hours</span><span class="rr-val">${fmtHrs(totalHrs)}</span></div>
+      <div class="report-row"><span>Cost Photos</span><span class="rr-val">${db.costs.filter(c => c.photo).length}</span></div>
+    </div>
+    <div class="report-card">
+      <h4>Projects by Status</h4>
+      ${byStatus.map(s => `<div class="report-row"><span>${s.label}</span><span class="rr-val">${s.count}</span></div>`).join('')}
+    </div>
+  </div>
+  <div class="report-card" style="margin-bottom:16px">
+    <h4>Spend & Time by Category</h4>
+    ${!byCat.length ? '<div style="color:var(--ink3);font-size:13px">No data yet</div>' :
+    byCat.map(c => `<div class="report-row"><span>${c.label}</span><span class="rr-val">${fmtEuro(c.spent)} · ${fmtHrs(c.hrs)}</span></div>`).join('')}
+  </div>
+  <div class="report-card">
+    <h4>Per-Project Summary</h4>
+    ${perProject.map(({p, spent, hrs}) => `
+      <div class="report-row">
+        <span>${p.name} <span class="badge ${statusClass[p.status]||''}" style="margin-left:4px">${p.status}</span></span>
+        <span class="rr-val">${fmtEuro(spent)} · ${fmtHrs(hrs)}</span>
+      </div>
+    `).join('')}
+  </div>`;
+}
+
+// ── Project CRUD ───────────────────────────────────────
+function openProjectModal(id) {
+  editProjectId = id || null;
+  const p = db.projects.find(x => x.id === id);
+  document.getElementById('modal-project-title').textContent = p ? 'Edit Project' : 'New Project';
+  document.getElementById('pf-name').value = p?.name || '';
+  document.getElementById('pf-cat').value = p?.cat || 'DIY / Renovations';
+  document.getElementById('pf-status').value = p?.status || 'Planned';
+  document.getElementById('pf-prio').value = p?.prio || 'Medium';
+  document.getElementById('pf-start').value = p?.start || today();
+  document.getElementById('pf-due').value = p?.due || '';
+  document.getElementById('pf-budget').value = p?.budget || '';
+  document.getElementById('pf-contractor').value = p?.contractor || '';
+  document.getElementById('pf-notes').value = p?.notes || '';
+  // Populate property dropdown
+  const propSel = document.getElementById('pf-property');
+  propSel.innerHTML = '<option value="">— No property selected —</option>' +
+    (db.properties||[]).map(prop =>
+      `<option value="${prop.id}" ${p?.propertyId === prop.id ? 'selected' : ''}>${prop.name}${prop.address ? ' — ' + prop.address : ''}</option>`
+    ).join('');
+  // Populate the room dropdown for the selected property; preselect existing loc
+  populateProjectRoomDropdown(p?.loc || '');
+  openModal('modal-project');
+  setTimeout(() => document.getElementById('pf-name').focus(), 80);
+}
+
+// Build the room dropdown for the currently-selected property in the modal.
+// Optionally pre-select a room (used when editing a project).
+function populateProjectRoomDropdown(preselectRoom) {
+  const sel = document.getElementById('pf-loc');
+  if (!sel) return;
+  const propId = Number(document.getElementById('pf-property').value) || null;
+  const help = document.getElementById('pf-loc-help');
+  if (!propId) {
+    sel.innerHTML = '<option value="">— Pick a property first —</option>';
+    sel.disabled = true;
+    if (help) help.textContent = 'Select a property to choose a room.';
+    return;
+  }
+  sel.disabled = false;
+  const rooms = getPropertyRooms(propId);
+  const current = (preselectRoom !== undefined) ? preselectRoom : sel.value;
+  // If current room isn't in the list (e.g. property was changed), include it temporarily
+  const allRooms = rooms.slice();
+  if (current && !allRooms.some(r => (r||'').toLowerCase() === current.toLowerCase())) {
+    allRooms.push(current);
+    allRooms.sort((a,b) => a.localeCompare(b));
+  }
+  sel.innerHTML = '<option value="">— No room —</option>' +
+    allRooms.map(r => `<option value="${r}" ${current && r.toLowerCase() === current.toLowerCase() ? 'selected' : ''}>${r}</option>`).join('') +
+    '<option value="__add_new__">+ Add new room…</option>';
+  if (help) help.textContent = rooms.length ? 'Pick a room or add a new one.' : 'No rooms yet — pick "+ Add new room…" to create one.';
+}
+
+// Triggered when the user changes the room dropdown. If they chose "+ Add new room…",
+// prompt for a name and add it to the property.
+function onProjectRoomChange() {
+  const sel = document.getElementById('pf-loc');
+  if (!sel) return;
+  if (sel.value !== '__add_new__') return;
+  const propId = Number(document.getElementById('pf-property').value) || null;
+  if (!propId) {
+    alert('Pick a property first.');
+    populateProjectRoomDropdown('');
+    return;
+  }
+  const prop = (db.properties||[]).find(p => p.id === propId);
+  const propName = prop ? prop.name : 'this property';
+  const newRoom = (prompt('Add a new room to ' + propName + ':') || '').trim();
+  if (!newRoom) {
+    populateProjectRoomDropdown('');
+    return;
+  }
+  if (roomExists(propId, newRoom)) {
+    // Already exists — just select it
+    populateProjectRoomDropdown(newRoom);
+    return;
+  }
+  if (!confirm('Add "' + newRoom + '" as a new room for ' + propName + '?')) {
+    populateProjectRoomDropdown('');
+    return;
+  }
+  addRoomToProperty(propId, newRoom);
+  populateProjectRoomDropdown(newRoom);
+}
+
+function saveProject() {
+  const name = document.getElementById('pf-name').value.trim();
+  if (!name) { document.getElementById('pf-name').focus(); return; }
+  const locVal = document.getElementById('pf-loc').value;
+  const p = {
+    id: editProjectId || newId(),
+    name,
+    loc: (locVal === '__add_new__' || !locVal) ? '' : locVal,
+    cat: document.getElementById('pf-cat').value,
+    status: document.getElementById('pf-status').value,
+    prio: document.getElementById('pf-prio').value,
+    start: document.getElementById('pf-start').value,
+    due: document.getElementById('pf-due').value,
+    budget: Number(document.getElementById('pf-budget').value) || 0,
+    contractor: document.getElementById('pf-contractor').value,
+    notes: document.getElementById('pf-notes').value,
+    propertyId: Number(document.getElementById('pf-property').value) || null,
+  };
+  if (editProjectId) {
+    const i = db.projects.findIndex(x => x.id === editProjectId);
+    db.projects[i] = p;
+  } else {
+    db.projects.push(p);
+  }
+  saveDB(); closeModal('modal-project'); renderAll();
+}
+
+function deleteProject(id) {
+  if (!confirm('Delete this project and all its costs, time entries and invoices?')) return;
+  db.projects = db.projects.filter(p => p.id !== id);
+  db.costs = db.costs.filter(c => c.projectId !== id);
+  db.timeLog = db.timeLog.filter(t => t.projectId !== id);
+  db.quotes = (db.quotes||[]).filter(q => q.projectId !== id);
+  saveDB(); renderAll();
+}
+
+// ── Cost CRUD ──────────────────────────────────────────
+function populateProjectSelect(elId, selectedId) {
+  const sel = document.getElementById(elId);
+  sel.innerHTML = db.projects.map(p =>
+    `<option value="${p.id}" ${p.id === selectedId ? 'selected' : ''}>${p.name}</option>`
+  ).join('');
+}
+
+function openCostModal(projectId) {
+  pendingCostPhoto = null;
+  document.getElementById('cf-photo-preview').innerHTML = '';
+  document.getElementById('cf-desc').value = '';
+  document.getElementById('cf-amount').value = '';
+  document.getElementById('cf-date').value = today();
+  document.getElementById('cf-cat').value = 'Materials';
+  populateProjectSelect('cf-project', projectId);
+  openModal('modal-cost');
+}
+
+function handleCostPhoto(input) {
+  if (!input.files[0]) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    pendingCostPhoto = e.target.result;
+    document.getElementById('cf-photo-preview').innerHTML =
+      `<div class="preview-item"><img src="${e.target.result}"><button class="preview-remove" onclick="pendingCostPhoto=null;this.parentElement.remove()">✕</button></div>`;
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+
+function saveCost() {
+  const desc = document.getElementById('cf-desc').value.trim();
+  const amount = document.getElementById('cf-amount').value;
+  if (!desc || !amount) return;
+  db.costs.push({
+    id: newId(),
+    projectId: Number(document.getElementById('cf-project').value),
+    desc,
+    amount: Number(amount),
+    date: document.getElementById('cf-date').value,
+    cat: document.getElementById('cf-cat').value,
+    photo: pendingCostPhoto || null,
+  });
+  pendingCostPhoto = null;
+  saveDB(); closeModal('modal-cost'); renderAll();
+}
+
+function deleteCost(id) {
+  db.costs = db.costs.filter(c => c.id !== id);
+  saveDB(); renderAll();
+}
+
+// ── Time CRUD ──────────────────────────────────────────
+let editTimeId = null;
+
+function populateUserSelect(selectId, selectedEmail) {
+  const sel = document.getElementById(selectId);
+  if (!sel) return;
+  const emails = knownUserEmails();
+  const fallback = currentUserEmail();
+  const chosen = (selectedEmail || fallback || '').toLowerCase();
+  if (emails.length === 0) {
+    sel.innerHTML = `<option value="">(no users — sign in first)</option>`;
+    return;
+  }
+  sel.innerHTML = emails.map(e => {
+    const sel = e === chosen ? ' selected' : '';
+    return `<option value="${e}"${sel}>${userDisplayName(e)}</option>`;
+  }).join('');
+}
+
+function openTimeModal(projectId, timeId) {
+  editTimeId = timeId || null;
+  const existing = editTimeId ? db.timeLog.find(t => t.id === editTimeId) : null;
+
+  // If editing and the user can't edit, just bail
+  if (existing && !canEditTimeEntry(existing)) {
+    alert("Only " + userDisplayName(existing.userEmail) + " can edit this entry.");
+    editTimeId = null;
+    return;
+  }
+
+  const titleEl = document.getElementById('modal-time-title');
+  const btnEl = document.getElementById('tf-save-btn');
+  if (titleEl) titleEl.textContent = existing ? 'Edit Time Entry' : 'Log Time';
+  if (btnEl) btnEl.textContent = existing ? 'Update Entry' : 'Save Time';
+
+  document.getElementById('tf-hours').value = existing ? (existing.hours || '') : '';
+  document.getElementById('tf-notes').value = existing ? (existing.notes || '') : '';
+  document.getElementById('tf-date').value = existing ? (existing.date || today()) : today();
+  // For backwards compat: existing.time may hold a single HH:MM (legacy) → put it in From
+  document.getElementById('tf-time-from').value = existing ? (existing.timeFrom || existing.time || '') : nowHHMM();
+  document.getElementById('tf-time-to').value = existing ? (existing.timeTo || '') : '';
+  populateProjectSelect('tf-project', existing ? existing.projectId : projectId);
+  populateUserSelect('tf-user', existing ? existing.userEmail : currentUserEmail());
+  openModal('modal-time');
+}
+
+function saveTime() {
+  const hours = document.getElementById('tf-hours').value;
+  if (!hours) return;
+  const userEmail = (document.getElementById('tf-user').value || currentUserEmail() || '').toLowerCase();
+
+  if (editTimeId) {
+    const t = db.timeLog.find(x => x.id === editTimeId);
+    if (t) {
+      // Permission re-check
+      if (!canEditTimeEntry(t)) {
+        alert("You don't have permission to edit this entry.");
+        return;
+      }
+      t.projectId = Number(document.getElementById('tf-project').value);
+      t.date = document.getElementById('tf-date').value;
+      t.timeFrom = document.getElementById('tf-time-from').value || '';
+      t.timeTo = document.getElementById('tf-time-to').value || '';
+      // Drop the legacy single-time field if the user has now provided range fields
+      if (t.timeFrom || t.timeTo) delete t.time;
+      t.hours = Number(hours);
+      t.notes = document.getElementById('tf-notes').value;
+      // Only superuser can re-assign to another person
+      if (isCurrentUserSuperuser() || (t.userEmail||'').toLowerCase() === currentUserEmail()) {
+        t.userEmail = userEmail || t.userEmail || currentUserEmail();
+      }
+    }
+  } else {
+    db.timeLog.push({
+      id: newId(),
+      projectId: Number(document.getElementById('tf-project').value),
+      date: document.getElementById('tf-date').value,
+      timeFrom: document.getElementById('tf-time-from').value || nowHHMM(),
+      timeTo: document.getElementById('tf-time-to').value || '',
+      hours: Number(hours),
+      notes: document.getElementById('tf-notes').value,
+      userEmail: userEmail || currentUserEmail() || '',
+    });
+  }
+  editTimeId = null;
+  saveDB(); closeModal('modal-time'); renderAll();
+}
+
+function deleteTime(id) {
+  const entry = db.timeLog.find(t => t.id === id);
+  if (!entry) return;
+  if (!canEditTimeEntry(entry)) {
+    alert("Only " + userDisplayName(entry.userEmail) + " can delete this entry.");
+    return;
+  }
+  if (!confirm("Delete this time entry?")) return;
+  db.timeLog = db.timeLog.filter(t => t.id !== id);
+  saveDB(); renderAll();
+}
+
+// Auto-tag any time entries that don't yet have a userEmail with the
+// superuser (you). Runs after sign-in / remote sync.
+function backfillTimeUserEmails() {
+  let changed = false;
+  (db.timeLog || []).forEach(t => {
+    if (!t.userEmail) {
+      t.userEmail = SUPERUSER_EMAIL;
+      changed = true;
+    }
+  });
+  if (changed) saveDB();
+}
+
+function openProjectCosts(projectId) {
+  const p = db.projects.find(x => x.id === projectId);
+  if (!p) return;
+  const costs = db.costs.filter(c => c.projectId === projectId).sort((a,b) => (b.date||'') > (a.date||'') ? 1 : -1);
+  const total = costs.reduce((s,c) => s + Number(c.amount||0), 0);
+  const budget = Number(p.budget||0);
+
+  document.getElementById('modal-costs-title').textContent = '💰 ' + p.name;
+  document.getElementById('modal-costs-add-btn').onclick = () => { closeModal('modal-project-costs'); openCostModal(projectId); };
+
+  const body = document.getElementById('modal-costs-body');
+  if (!costs.length) {
+    body.innerHTML = `<div class="empty-state"><div class="empty-icon">💰</div><div class="empty-title">Enginn kostnaður</div><div class="empty-text">Bættu við kostnaði hér að neðan</div></div>`;
+  } else {
+    body.innerHTML = `
+      <div style="padding:14px 20px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:13px;color:var(--ink2)">${costs.length} færslur</span>
+        <span style="font-family:'DM Serif Display',serif;font-size:20px;color:var(--accent)">${fmtEuro(total)}</span>
+      </div>
+      ${budget ? `<div style="padding:10px 20px;background:var(--accent-bg);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;font-size:12px">
+        <span style="color:var(--ink2)">Fjárhagsáætlun: ${fmtEuro(budget)}</span>
+        <span style="color:${total > budget ? '#c0392b' : 'var(--green)'};font-weight:600">${Math.round(total/budget*100)}% notað${total > budget ? ' · YFIR FJÁRHAGSÁÆTLUN' : ''}</span>
+      </div>` : ''}
+      <div style="max-height:380px;overflow-y:auto">
+        ${costs.map(c => `
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid var(--border)">
+          ${c.photo ? `<div style="width:44px;height:44px;border-radius:8px;overflow:hidden;flex-shrink:0;cursor:pointer" onclick="openLightbox('${c.photo}')"><img src="${c.photo}" style="width:100%;height:100%;object-fit:cover"></div>` : `<div style="width:44px;height:44px;border-radius:8px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🧾</div>`}
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:500">${c.desc}</div>
+            <div style="font-size:11px;color:var(--ink3);margin-top:2px">${c.cat || ''} ${c.date ? '· ' + fmtDate(c.date) : ''}</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-size:14px;font-weight:600;color:var(--accent)">${fmtEuro(c.amount)}</div>
+            <button style="font-size:10px;color:var(--ink3);background:none;border:none;cursor:pointer;padding:2px 0" onclick="deleteCostFromModal(${c.id},${projectId})">✕ eyða</button>
+          </div>
+        </div>`).join('')}
+      </div>`;
+  }
+  openModal('modal-project-costs');
+}
+
+function deleteCostFromModal(costId, projectId) {
+  if (!confirm('Eyða þessum kostnaði?')) return;
+  db.costs = db.costs.filter(c => c.id !== costId);
+  saveDB();
+  renderAll();
+  openProjectCosts(projectId); // refresh modal
+}
+
+// ── Modal helpers ──────────────────────────────────────
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function closeBg(e, id) { if (e.target === document.getElementById(id)) closeModal(id); }
+
+// ── Lightbox ───────────────────────────────────────────
+function openLightbox(src) {
+  document.getElementById('lightbox-img').src = src;
+  document.getElementById('lightbox').classList.add('open');
+}
+function closeLightbox() { document.getElementById('lightbox').classList.remove('open'); }
+
+
+// ── Quotes CRUD ────────────────────────────────────────
+let pendingQuotePhoto = null;
+let editQuoteId = null;
+
+function openQuoteModal(projectId, quoteId) {
+  editQuoteId = quoteId || null;
+  const existing = editQuoteId ? (db.quotes||[]).find(q => q.id === editQuoteId) : null;
+
+  // Title and button label change between Add/Edit modes
+  const titleEl = document.getElementById('modal-quote-title');
+  const btnEl = document.getElementById('qf-save-btn');
+  if (titleEl) titleEl.textContent = existing ? 'Edit Quote' : 'Add Quote';
+  if (btnEl) btnEl.textContent = existing ? 'Update Quote' : 'Save Quote';
+
+  pendingQuotePhoto = existing && existing.photo ? existing.photo : null;
+  const preview = document.getElementById('qf-photo-preview');
+  if (pendingQuotePhoto) {
+    preview.innerHTML =
+      `<div class="preview-item"><img src="${pendingQuotePhoto}"><button class="preview-remove" onclick="pendingQuotePhoto=null;this.parentElement.remove()">✕</button></div>`;
+  } else {
+    preview.innerHTML = '';
+  }
+
+  document.getElementById('qf-supplier').value = existing ? (existing.supplier || '') : '';
+  document.getElementById('qf-amount').value = existing ? (existing.amount || '') : '';
+  document.getElementById('qf-date').value = existing ? (existing.date || today()) : today();
+  document.getElementById('qf-valid').value = existing ? (existing.valid || '') : '';
+  document.getElementById('qf-desc').value = existing ? (existing.desc || '') : '';
+  document.getElementById('qf-accepted').checked = existing ? !!existing.accepted : false;
+  populateProjectSelect('qf-project', existing ? existing.projectId : projectId);
+  openModal('modal-quote');
+  setTimeout(() => document.getElementById('qf-supplier').focus(), 80);
+}
+
+function handleQuotePhoto(input) {
+  if (!input.files[0]) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    pendingQuotePhoto = e.target.result;
+    document.getElementById('qf-photo-preview').innerHTML =
+      `<div class="preview-item"><img src="${e.target.result}"><button class="preview-remove" onclick="pendingQuotePhoto=null;this.parentElement.remove()">✕</button></div>`;
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+
+function saveQuote() {
+  const supplier = document.getElementById('qf-supplier').value.trim();
+  const amount = document.getElementById('qf-amount').value;
+  if (!supplier || !amount) return;
+  if (!db.quotes) db.quotes = [];
+
+  if (editQuoteId) {
+    // Edit existing
+    const q = db.quotes.find(x => x.id === editQuoteId);
+    if (q) {
+      q.projectId = Number(document.getElementById('qf-project').value);
+      q.supplier = supplier;
+      q.amount = Number(amount);
+      q.date = document.getElementById('qf-date').value;
+      q.valid = document.getElementById('qf-valid').value;
+      q.desc = document.getElementById('qf-desc').value;
+      q.accepted = document.getElementById('qf-accepted').checked;
+      q.photo = pendingQuotePhoto || null;
+    }
+  } else {
+    // Add new
+    db.quotes.push({
+      id: newId(),
+      projectId: Number(document.getElementById('qf-project').value),
+      supplier,
+      amount: Number(amount),
+      date: document.getElementById('qf-date').value,
+      valid: document.getElementById('qf-valid').value,
+      desc: document.getElementById('qf-desc').value,
+      accepted: document.getElementById('qf-accepted').checked,
+      photo: pendingQuotePhoto || null,
+    });
+  }
+
+  pendingQuotePhoto = null;
+  editQuoteId = null;
+  saveDB(); closeModal('modal-quote'); renderAll();
+}
+
+function deleteQuote(id) {
+  db.quotes = (db.quotes||[]).filter(q => q.id !== id);
+  saveDB(); renderAll();
+}
+
+function toggleQuoteAccepted(id) {
+  const q = (db.quotes||[]).find(x => x.id === id);
+  if (q) { q.accepted = !q.accepted; saveDB(); renderAll(); }
+}
+
+// ── Render all quotes view ─────────────────────────────
+function renderAllQuotes() {
+  const list = document.getElementById('all-quotes-list');
+  if (!list) return;
+  const quotes = db.quotes || [];
+  if (!quotes.length) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">📄</div><div class="empty-title">No quotes yet</div><div class="empty-text">Add quotes from suppliers to compare prices before starting a project</div></div>`;
+    return;
+  }
+
+  const totalAccepted = quotes.filter(q => q.accepted).reduce((s,q) => s + Number(q.amount||0), 0);
+
+  const grouped = {};
+  quotes.forEach(q => {
+    const proj = db.projects.find(p => p.id === q.projectId);
+    const key = proj ? proj.name : 'Unknown Project';
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(q);
+  });
+
+  let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:12px 14px;background:var(--blue-bg);border-radius:8px;border:1px solid rgba(42,90,154,0.12)">
+    <span style="font-size:13px;font-weight:500;color:var(--blue)">Total accepted quotes</span>
+    <span style="font-family:'DM Serif Display',serif;font-size:20px;color:var(--blue)">${fmtEuro(totalAccepted)}</span>
+  </div>`;
+
+  for (const [projName, qs] of Object.entries(grouped)) {
+    const lowest = Math.min(...qs.map(q => q.amount));
+    html += `<div style="margin-bottom:20px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div class="section-label">${projName}</div>
+        <span style="font-size:11px;color:var(--ink3)">${qs.length} quote${qs.length!==1?'s':''}</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        ${qs.sort((a,b) => a.amount - b.amount).map(q => `
+          <div style="background:var(--surface);border:1px solid ${q.accepted ? 'var(--green)' : 'var(--border)'};border-radius:var(--radius);overflow:hidden">
+            <div style="display:flex;align-items:stretch">
+              ${q.photo ? `<div style="width:72px;flex-shrink:0;cursor:pointer;overflow:hidden" onclick="openLightbox('${q.photo}')"><img src="${q.photo}" style="width:100%;height:100%;object-fit:cover;display:block"></div>` : `<div style="width:72px;flex-shrink:0;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:28px">📄</div>`}
+              <div style="flex:1;padding:12px 14px">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
+                  <span style="font-size:14px;font-weight:600">${q.supplier}</span>
+                  ${q.accepted ? '<span style="font-size:11px;background:var(--green-bg);color:var(--green);padding:2px 8px;border-radius:10px;font-weight:500">✓ Accepted</span>' : ''}
+                  ${q.amount === lowest && qs.length > 1 ? '<span style="font-size:11px;background:var(--blue-bg);color:var(--blue);padding:2px 8px;border-radius:10px;font-weight:500">Lowest</span>' : ''}
+                </div>
+                <div style="font-family:'DM Serif Display',serif;font-size:20px;color:var(--accent);margin-bottom:4px">${fmtEuro(q.amount)}</div>
+                ${q.desc ? `<div style="font-size:12px;color:var(--ink2);margin-bottom:4px">${q.desc}</div>` : ''}
+                <div style="display:flex;gap:12px;font-size:11px;color:var(--ink3)">
+                  ${q.date ? `<span>Received: ${fmtDate(q.date)}</span>` : ''}
+                  ${q.valid ? `<span>Valid until: ${fmtDate(q.valid)}</span>` : ''}
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:4px;padding:10px 10px 10px 0;justify-content:center">
+                <button class="btn sm" onclick="openQuoteModal(${q.projectId}, ${q.id})" style="font-size:11px;white-space:nowrap">✎ Edit</button>
+                <button class="btn sm" onclick="toggleQuoteAccepted(${q.id})" style="font-size:11px;white-space:nowrap">${q.accepted ? 'Unaccept' : '✓ Accept'}</button>
+                <button class="btn sm danger" onclick="deleteQuote(${q.id})" style="font-size:11px">Remove</button>
+              </div>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  }
+  list.innerHTML = html;
+}
+
+// ── Properties CRUD ────────────────────────────────────
+let editPropertyId = null;
+
+function populatePropertyFilters() {
+  const sel = document.getElementById('filter-property');
+  if (!sel) return;
+  const current = sel.value;
+  sel.innerHTML = '<option value="">All Properties</option>' +
+    (db.properties||[]).map(p => `<option value="${p.id}" ${String(p.id) === current ? 'selected' : ''}>${p.name}</option>`).join('');
+}
+
+let pendingPropertyPhoto = null;
+
+function handlePropertyPhoto(input) {
+  if (!input.files[0]) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    pendingPropertyPhoto = e.target.result;
+    document.getElementById('prop-photo-preview').innerHTML =
+      `<div class="preview-item"><img src="${e.target.result}" style="width:100%;height:120px;object-fit:cover;border-radius:8px;margin-top:8px"><button class="preview-remove" onclick="pendingPropertyPhoto=null;this.parentElement.remove()">✕</button></div>`;
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+
+function openPropertyModal(id) {
+  editPropertyId = id || null;
+  pendingPropertyPhoto = null;
+  const p = (db.properties||[]).find(x => x.id === id);
+  document.getElementById('modal-property-title').textContent = p ? 'Edit Property' : 'Add Property';
+  document.getElementById('prop-name').value = p?.name || '';
+  document.getElementById('prop-address').value = p?.address || '';
+  document.getElementById('prop-owner').value = p?.owner || '';
+  document.getElementById('prop-notes').value = p?.notes || '';
+  // Show existing photo if any
+  const preview = document.getElementById('prop-photo-preview');
+  if (p?.photo) {
+    pendingPropertyPhoto = p.photo;
+    preview.innerHTML = `<div class="preview-item"><img src="${p.photo}" style="width:100%;height:120px;object-fit:cover;border-radius:8px;margin-top:8px"><button class="preview-remove" onclick="pendingPropertyPhoto=null;this.parentElement.remove()">✕</button></div>`;
+  } else {
+    preview.innerHTML = '';
+  }
+  openModal('modal-property');
+  setTimeout(() => document.getElementById('prop-name').focus(), 80);
+}
+
+function saveProperty() {
+  const name = document.getElementById('prop-name').value.trim();
+  if (!name) { document.getElementById('prop-name').focus(); return; }
+  if (!db.properties) db.properties = [];
+  // Preserve rooms + room metadata when editing — they live on the property record
+  const existing = editPropertyId ? (db.properties.find(x => x.id === editPropertyId) || {}) : {};
+  const p = {
+    id: editPropertyId || newId(),
+    name,
+    address: document.getElementById('prop-address').value.trim(),
+    owner: document.getElementById('prop-owner').value.trim(),
+    notes: document.getElementById('prop-notes').value.trim(),
+    photo: pendingPropertyPhoto || null,
+    rooms: Array.isArray(existing.rooms) ? existing.rooms : [],
+    roomsData: (existing.roomsData && typeof existing.roomsData === 'object') ? existing.roomsData : {},
+  };
+  if (editPropertyId) {
+    const i = db.properties.findIndex(x => x.id === editPropertyId);
+    db.properties[i] = p;
+  } else {
+    db.properties.push(p);
+  }
+  saveDB(); closeModal('modal-property'); renderAll();
+}
+
+function deleteProperty(id) {
+  const inUse = db.projects.some(p => p.propertyId === id);
+  if (inUse && !confirm('This property is linked to one or more projects. Delete it anyway? Projects will keep their data but lose the property link.')) return;
+  if (!inUse && !confirm('Delete this property?')) return;
+  db.properties = (db.properties||[]).filter(p => p.id !== id);
+  // Unlink from projects
+  db.projects.forEach(p => { if (p.propertyId === id) p.propertyId = null; });
+  saveDB(); renderAll();
+}
+
+function renderProperties() {
+  const list = document.getElementById('properties-list');
+  if (!list) return;
+  if (!(db.properties||[]).length) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">🏘</div><div class="empty-title">No properties yet</div><div class="empty-text">Add your home, your kids' homes, or any property you work on</div></div>`;
+    return;
+  }
+  list.innerHTML = db.properties.map(p => {
+    const projectCount = db.projects.filter(proj => proj.propertyId === p.id).length;
+    const totalSpent = db.costs
+      .filter(c => db.projects.find(proj => proj.id === c.projectId && proj.propertyId === p.id))
+      .reduce((s, c) => s + Number(c.amount||0), 0);
+    const rooms = getPropertyRooms(p.id);
+    const roomCards = rooms.length ? rooms.map(r => {
+      const inUse = db.projects.some(pj => pj.propertyId === p.id && (pj.loc||'').toLowerCase() === r.toLowerCase());
+      const safeRoom = r.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+      const data = getRoomData(p.id, r);
+      const projCount = db.projects.filter(pj => pj.propertyId === p.id && (pj.loc||'').toLowerCase() === r.toLowerCase()).length;
+      const thumb = data.photo
+        ? `<div style="height:60px;background:url('${data.photo}') center/cover"></div>`
+        : `<div onclick="event.stopPropagation();pickRoomThumb(${p.id}, '${safeRoom}')" title="Tap to add a photo" style="height:60px;background:var(--surface2);display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--ink3);gap:2px;cursor:pointer" onmouseover="this.style.background='var(--surface3,var(--surface2))';this.style.color='var(--accent)'" onmouseout="this.style.background='var(--surface2)';this.style.color='var(--ink3)'">
+            <div style="font-size:18px">📷</div>
+            <div style="font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em">Add photo</div>
+          </div>`;
+      const meta = [];
+      if (data.floor) meta.push(escapeHtml(data.floor));
+      if (projCount) meta.push(projCount + ' proj' + (projCount !== 1 ? 's' : ''));
+      return `<div onclick="openRoomDetail(${p.id}, '${safeRoom}')" style="cursor:pointer;background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;display:flex;flex-direction:column;transition:transform 0.1s,border-color 0.1s" onmouseover="this.style.transform='translateY(-1px)';this.style.borderColor='var(--accent)'" onmouseout="this.style.transform='';this.style.borderColor='var(--border)'" title="Open ${escapeHtml(r)}">
+        ${thumb}
+        <div style="padding:8px 10px;display:flex;flex-direction:column;gap:2px;flex:1">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:4px">
+            <div style="font-weight:600;font-size:12px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(r)}</div>
+            <div style="display:flex;gap:2px;flex-shrink:0">
+              <button onclick="event.stopPropagation();renameRoomPrompt(${p.id}, '${safeRoom}')" title="Rename" style="background:none;border:none;cursor:pointer;color:var(--ink3);padding:2px 4px;font-size:11px;line-height:1;border-radius:3px" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='none'">✎</button>
+              <button onclick="event.stopPropagation();deleteRoomFromProperty(${p.id}, '${safeRoom}')" title="${inUse ? 'In use by a project — cannot delete' : 'Delete'}" style="background:none;border:none;cursor:${inUse ? 'not-allowed' : 'pointer'};color:${inUse ? 'var(--ink3)' : 'var(--accent)'};opacity:${inUse ? '0.4' : '1'};padding:2px 4px;font-size:11px;line-height:1;border-radius:3px" onmouseover="if(!${inUse})this.style.background='var(--surface2)'" onmouseout="this.style.background='none'">✕</button>
+            </div>
+          </div>
+          ${meta.length ? `<div style="font-size:10px;color:var(--ink3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${meta.join(' · ')}</div>` : ''}
+        </div>
+      </div>`;
+    }).join('') : '<div style="grid-column:1/-1;font-size:12px;color:var(--ink3);font-style:italic;padding:8px 0">No rooms yet — tap "+ Add room" to start.</div>';
+    return `
+    <div class="card" style="margin-bottom:12px;overflow:hidden">
+      ${p.photo ? `<div style="height:140px;background:url('${p.photo}') center/cover;position:relative"><div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,0.1),rgba(0,0,0,0.5))"></div><div style="position:absolute;bottom:12px;left:16px;color:#fff;font-family:'DM Serif Display',serif;font-size:18px;text-shadow:0 1px 4px rgba(0,0,0,0.5)">${p.name}</div></div>` : ''}
+      <div style="padding:16px 20px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px">
+        <div style="flex:1;min-width:0">
+          ${!p.photo ? `<div style="font-weight:600;font-size:15px;margin-bottom:4px">🏘 ${p.name}</div>` : ''}
+          ${p.address ? `<div style="font-size:13px;color:var(--ink2);margin-bottom:4px">📍 ${p.address}</div>` : ''}
+          ${p.owner ? `<div style="font-size:12px;color:var(--ink3);margin-bottom:6px">👤 ${p.owner}</div>` : ''}
+          <div style="display:flex;gap:12px;font-size:12px;color:var(--ink3)">
+            <span>${projectCount} project${projectCount !== 1 ? 's' : ''}</span>
+            ${totalSpent ? `<span>· ${fmtEuro(totalSpent)} spent</span>` : ''}
+          </div>
+          ${p.notes ? `<div style="font-size:12px;color:var(--ink2);margin-top:6px;font-style:italic">${p.notes}</div>` : ''}
+          <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <div style="font-size:11px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em">Rooms${rooms.length ? ' · ' + rooms.length : ''}</div>
+              <button class="btn sm ghost" onclick="addRoomPrompt(${p.id})" style="font-size:11px;padding:2px 8px">+ Add room</button>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px">${roomCards}</div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
+          <button class="btn sm" onclick="openPropertyModal(${p.id})">✏️ Edit</button>
+          <button class="btn sm danger" onclick="deleteProperty(${p.id})">🗑 Delete</button>
+          <button class="btn sm ghost" onclick="document.getElementById('filter-property').value='${p.id}';showView('projects')" style="font-size:11px;white-space:nowrap">View projects →</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// Prompt to add a room to a property (called from property card)
+function addRoomPrompt(propertyId) {
+  const prop = (db.properties||[]).find(p => p.id === propertyId);
+  if (!prop) return;
+  const name = (prompt('Add a new room to ' + prop.name + ':') || '').trim();
+  if (!name) return;
+  if (roomExists(propertyId, name)) {
+    alert('"' + name + '" is already a room for this property.');
+    return;
+  }
+  if (addRoomToProperty(propertyId, name)) renderAll();
+}
+
+// Prompt to rename an existing room
+function renameRoomPrompt(propertyId, oldName) {
+  const newName = (prompt('Rename "' + oldName + '" to:', oldName) || '').trim();
+  if (!newName || newName === oldName) return;
+  renameRoomOnProperty(propertyId, oldName, newName);
+}
+
+// ══════════════════════════════════════════
+//  ROOMS — overview + detail page
+// ══════════════════════════════════════════
+
+// Open the detail page for a specific room
+function openRoomDetail(propertyId, roomName) {
+  showView('room-detail', { propertyId, roomName });
+}
+
+// Quick photo upload straight from the property card's room tile
+// (no need to open the edit modal)
+function pickRoomThumb(propertyId, roomName) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.style.display = 'none';
+  input.addEventListener('change', () => {
+    const file = input.files && input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setRoomData(propertyId, roomName, { photo: e.target.result });
+      renderAll();
+    };
+    reader.readAsDataURL(file);
+  });
+  document.body.appendChild(input);
+  input.click();
+  // Clean up after the dialog closes
+  setTimeout(() => input.remove(), 30000);
+}
+
+// Aggregated stats for a single room (projects, costs, time, quotes)
+function getRoomStats(propertyId, roomName) {
+  const target = (roomName||'').toLowerCase();
+  const projects = (db.projects||[]).filter(p => p.propertyId === propertyId
+    && (p.loc||'').toLowerCase() === target);
+  const projectIds = new Set(projects.map(p => p.id));
+  const costs = (db.costs||[]).filter(c => projectIds.has(c.projectId));
+  const time = (db.timeLog||[]).filter(t => projectIds.has(t.projectId));
+  const quotes = (db.quotes||[]).filter(q => projectIds.has(q.projectId));
+  const totalSpent = costs.reduce((s,c) => s + Number(c.amount||0), 0);
+  const totalHours = time.reduce((s,t) => s + Number(t.hours||0), 0);
+  const totalBudget = projects.reduce((s,p) => s + Number(p.budget||0), 0);
+  const activeCount = projects.filter(p => p.status === 'In Progress' || p.status === 'Planned').length;
+  const doneCount = projects.filter(p => p.status === 'Done').length;
+  return { projects, costs, time, quotes, totalSpent, totalHours, totalBudget, activeCount, doneCount };
+}
+
+function renderRoomsOverview() {
+  const list = document.getElementById('rooms-list');
+  if (!list) return;
+
+  // Build flat list of {property, roomName} pairs
+  const all = [];
+  (db.properties||[]).forEach(prop => {
+    (prop.rooms || []).forEach(r => all.push({ property: prop, roomName: r }));
+  });
+
+  // Refresh property + floor filter dropdowns
+  const propSel = document.getElementById('rooms-filter-property');
+  if (propSel) {
+    const cur = propSel.value;
+    propSel.innerHTML = '<option value="">All Properties</option>' +
+      (db.properties||[]).map(p => `<option value="${p.id}" ${String(p.id)===cur?'selected':''}>${escapeHtml(p.name)}</option>`).join('');
+  }
+  const floorSel = document.getElementById('rooms-filter-floor');
+  if (floorSel) {
+    const cur = floorSel.value;
+    const floors = Array.from(new Set(all.map(({property, roomName}) =>
+      (getRoomData(property.id, roomName).floor || '').trim()
+    ).filter(Boolean))).sort();
+    floorSel.innerHTML = '<option value="">All Floors</option>' +
+      floors.map(f => `<option value="${escapeHtml(f)}" ${f===cur?'selected':''}>${escapeHtml(f)}</option>`).join('');
+  }
+
+  if (!all.length) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">🚪</div><div class="empty-title">No rooms yet</div><div class="empty-text">Add rooms from the Properties page</div></div>`;
+    return;
+  }
+
+  // Apply filters
+  const search = (document.getElementById('rooms-search')?.value || '').trim().toLowerCase();
+  const fProp = document.getElementById('rooms-filter-property')?.value || '';
+  const fFloor = document.getElementById('rooms-filter-floor')?.value || '';
+  const fAct = document.getElementById('rooms-filter-activity')?.value || '';
+
+  const filtered = all.filter(({property, roomName}) => {
+    if (fProp && String(property.id) !== fProp) return false;
+    const data = getRoomData(property.id, roomName);
+    if (fFloor && (data.floor||'').trim() !== fFloor) return false;
+    if (search) {
+      const hay = (roomName + ' ' + property.name + ' ' + (data.notes||'')).toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    if (fAct) {
+      const stats = getRoomStats(property.id, roomName);
+      if (fAct === 'has' && stats.projects.length === 0) return false;
+      if (fAct === 'active' && stats.activeCount === 0) return false;
+      if (fAct === 'empty' && stats.projects.length > 0) return false;
+    }
+    return true;
+  });
+
+  if (!filtered.length) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">No rooms match</div><div class="empty-text">Try clearing the filters</div></div>`;
+    return;
+  }
+
+  // Group by property for visual hierarchy
+  const byProp = {};
+  filtered.forEach(item => {
+    const k = item.property.id;
+    if (!byProp[k]) byProp[k] = { property: item.property, rooms: [] };
+    byProp[k].rooms.push(item.roomName);
+  });
+
+  list.innerHTML = Object.values(byProp).map(({property, rooms}) => {
+    const cards = rooms.map(roomName => {
+      const data = getRoomData(property.id, roomName);
+      const stats = getRoomStats(property.id, roomName);
+      const safeRoom = roomName.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+      const photoBlock = data.photo
+        ? `<div style="height:90px;background:url('${data.photo}') center/cover;border-radius:6px 6px 0 0"></div>`
+        : `<div style="height:90px;background:var(--surface2);border-radius:6px 6px 0 0;display:flex;align-items:center;justify-content:center;color:var(--ink3);font-size:24px">🚪</div>`;
+      const meta = [];
+      if (data.floor) meta.push(escapeHtml(data.floor));
+      if (data.dimensions) meta.push(escapeHtml(data.dimensions));
+      return `<div class="card" style="padding:0;cursor:pointer;overflow:hidden;display:flex;flex-direction:column" onclick="openRoomDetail(${property.id}, '${safeRoom}')">
+        ${photoBlock}
+        <div style="padding:12px 14px;flex:1;display:flex;flex-direction:column;gap:6px">
+          <div style="font-weight:600;font-size:14px;color:var(--ink)">${escapeHtml(roomName)}</div>
+          ${meta.length ? `<div style="font-size:11px;color:var(--ink3)">${meta.join(' · ')}</div>` : ''}
+          <div style="display:flex;gap:8px;flex-wrap:wrap;font-size:11px;color:var(--ink3);margin-top:auto;padding-top:6px">
+            <span>${stats.projects.length} project${stats.projects.length!==1?'s':''}</span>
+            ${stats.totalSpent ? `<span>· ${fmtEuro(stats.totalSpent)}</span>` : ''}
+            ${stats.totalHours ? `<span>· ${stats.totalHours.toFixed(1)}h</span>` : ''}
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+    return `<div style="margin-bottom:24px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <div class="section-label" style="margin-bottom:0">🏘 ${escapeHtml(property.name)}</div>
+        <span style="font-size:11px;color:var(--ink3)">${rooms.length} room${rooms.length!==1?'s':''}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px">${cards}</div>
+    </div>`;
+  }).join('');
+}
+
+// Tiny HTML-escape used in the room views (avoids issues if a room is named "Mom's Room")
+function escapeHtml(s) {
+  return String(s||'').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+
+function renderRoomDetail() {
+  const host = document.getElementById('room-detail-content');
+  if (!host) return;
+  if (!currentRoomCtx) {
+    host.innerHTML = `<div class="empty-state"><div class="empty-icon">🚪</div><div class="empty-title">No room selected</div><div class="empty-text">Pick a room from the Rooms page</div><button class="btn primary" style="margin-top:12px" onclick="showView('rooms')">Browse rooms</button></div>`;
+    return;
+  }
+  const { propertyId, roomName } = currentRoomCtx;
+  const prop = (db.properties||[]).find(p => p.id === propertyId);
+  if (!prop || !roomExists(propertyId, roomName)) {
+    host.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-title">Room not found</div><div class="empty-text">It may have been deleted or renamed</div><button class="btn primary" style="margin-top:12px" onclick="showView('rooms')">Back to rooms</button></div>`;
+    return;
+  }
+
+  // Update page subtitle
+  document.getElementById('page-title').textContent = roomName;
+  document.getElementById('page-subtitle').textContent = prop.name;
+
+  const data = getRoomData(propertyId, roomName);
+  const stats = getRoomStats(propertyId, roomName);
+  const safeRoom = roomName.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+
+  // Header / hero
+  const hero = data.photo
+    ? `<div style="height:200px;background:url('${data.photo}') center/cover;border-radius:8px;position:relative;cursor:pointer" onclick="openLightbox('${data.photo}')"></div>`
+    : `<div style="height:140px;background:var(--surface2);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--ink3);font-size:48px">🚪</div>`;
+
+  // Info chips
+  const infoRows = [];
+  if (data.floor) infoRows.push(['Floor', escapeHtml(data.floor)]);
+  if (data.dimensions) infoRows.push(['Dimensions', escapeHtml(data.dimensions)]);
+  if (data.area) infoRows.push(['Area', escapeHtml(data.area)]);
+  const infoBlock = infoRows.length
+    ? `<div style="display:flex;flex-wrap:wrap;gap:16px;margin-top:12px">${infoRows.map(([k,v]) =>
+        `<div><div style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px">${k}</div><div style="font-size:13px;color:var(--ink)">${v}</div></div>`
+      ).join('')}</div>`
+    : '';
+
+  // Stat cards
+  const statCards = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-top:16px">
+      <div class="card" style="padding:12px 14px">
+        <div style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em">Projects</div>
+        <div style="font-family:'DM Serif Display',serif;font-size:22px;color:var(--ink);margin-top:2px">${stats.projects.length}</div>
+        <div style="font-size:10px;color:var(--ink3)">${stats.activeCount} active · ${stats.doneCount} done</div>
+      </div>
+      <div class="card" style="padding:12px 14px">
+        <div style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em">Spent</div>
+        <div style="font-family:'DM Serif Display',serif;font-size:22px;color:var(--accent);margin-top:2px">${fmtEuro(stats.totalSpent)}</div>
+        <div style="font-size:10px;color:var(--ink3)">${stats.totalBudget ? 'of ' + fmtEuro(stats.totalBudget) + ' budget' : 'no budget set'}</div>
+      </div>
+      <div class="card" style="padding:12px 14px">
+        <div style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em">Hours</div>
+        <div style="font-family:'DM Serif Display',serif;font-size:22px;color:var(--ink);margin-top:2px">${stats.totalHours.toFixed(1)}h</div>
+        <div style="font-size:10px;color:var(--ink3)">${stats.time.length} session${stats.time.length!==1?'s':''}</div>
+      </div>
+      <div class="card" style="padding:12px 14px">
+        <div style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em">Quotes</div>
+        <div style="font-family:'DM Serif Display',serif;font-size:22px;color:var(--ink);margin-top:2px">${stats.quotes.length}</div>
+        <div style="font-size:10px;color:var(--ink3)">${stats.quotes.filter(q => q.accepted).length} accepted</div>
+      </div>
+    </div>`;
+
+  // Projects list (in this room) — active first, done last
+  const projectsBlock = stats.projects.length
+    ? sortProjectsByStatus(stats.projects).map(p => {
+        const spent = stats.costs.filter(c => c.projectId === p.id).reduce((s,c) => s + Number(c.amount||0), 0);
+        const hrs = stats.time.filter(t => t.projectId === p.id).reduce((s,t) => s + Number(t.hours||0), 0);
+        const statusColor = p.status === 'Done' ? '#27ae60' : (p.status === 'In Progress' ? 'var(--accent)' : 'var(--ink3)');
+        return `<div class="card" style="padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <div style="flex:1;min-width:160px">
+            <div style="font-weight:600;font-size:14px;margin-bottom:2px">${escapeHtml(p.name)}</div>
+            <div style="font-size:11px;color:var(--ink3)">
+              <span style="color:${statusColor};font-weight:500">● ${p.status||'—'}</span>
+              ${p.cat ? ' · ' + escapeHtml(p.cat) : ''}
+              ${p.due ? ' · due ' + fmtDate(p.due) : ''}
+            </div>
+          </div>
+          <div style="font-size:12px;color:var(--ink2);text-align:right">
+            <div>${fmtEuro(spent)}${p.budget ? ' / ' + fmtEuro(p.budget) : ''}</div>
+            <div style="font-size:11px;color:var(--ink3)">${hrs.toFixed(1)}h</div>
+          </div>
+        </div>`;
+      }).join('')
+    : `<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:12px 0">No projects assigned to this room yet.</div>`;
+
+  // Recent costs
+  const costsSorted = stats.costs.slice().sort((a,b) => (b.date||'') > (a.date||'') ? 1 : -1).slice(0, 8);
+  const costsBlock = costsSorted.length
+    ? costsSorted.map(c => {
+        const proj = db.projects.find(p => p.id === c.projectId);
+        return `<div class="cost-entry">
+          ${c.photo ? `<div style="width:32px;height:32px;border-radius:4px;overflow:hidden;margin-right:8px;flex-shrink:0;cursor:pointer" onclick="openLightbox('${c.photo}')"><img src="${c.photo}" style="width:100%;height:100%;object-fit:cover"></div>` : ''}
+          <span class="ce-label">${escapeHtml(c.desc||'')} <span style="font-size:10px;color:var(--ink3)">${proj ? escapeHtml(proj.name) : ''}</span></span>
+          <span class="ce-date">${fmtDate(c.date)}</span>
+          <span class="ce-amount">${fmtEuro(c.amount)}</span>
+        </div>`;
+      }).join('')
+    : `<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:12px 0">No costs logged in this room yet.</div>`;
+
+  // Recent time entries
+  const timeSorted = stats.time.slice().sort((a,b) => (b.date||'') > (a.date||'') ? 1 : -1).slice(0, 8);
+  const timeBlock = timeSorted.length
+    ? timeSorted.map(t => {
+        const proj = db.projects.find(p => p.id === t.projectId);
+        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--surface2);border-radius:6px;margin-bottom:4px;font-size:12px">
+          <div style="flex:1;min-width:0">
+            <div style="color:var(--ink);font-weight:500">${escapeHtml(t.person||'Someone')}</div>
+            <div style="color:var(--ink3);font-size:11px">${proj ? escapeHtml(proj.name) : ''} ${t.note ? '· ' + escapeHtml(t.note) : ''}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="color:var(--ink2)">${Number(t.hours||0).toFixed(1)}h</div>
+            <div style="color:var(--ink3);font-size:11px">${fmtDate(t.date)}</div>
+          </div>
+        </div>`;
+      }).join('')
+    : `<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:12px 0">No time logged in this room yet.</div>`;
+
+  // Notes block
+  const notesBlock = data.notes
+    ? `<div style="white-space:pre-wrap;font-size:13px;color:var(--ink2);line-height:1.5">${escapeHtml(data.notes)}</div>`
+    : `<div style="font-size:13px;color:var(--ink3);font-style:italic">No notes yet — tap Edit to add some.</div>`;
+
+  host.innerHTML = `
+    <div style="margin-bottom:12px">
+      <button class="btn sm ghost" onclick="showView('rooms')" style="font-size:12px">← All rooms</button>
+    </div>
+    ${hero}
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-top:16px;flex-wrap:wrap">
+      <div style="flex:1;min-width:200px">
+        <div style="font-family:'DM Serif Display',serif;font-size:24px;color:var(--ink);line-height:1.2">${escapeHtml(roomName)}</div>
+        <div style="font-size:13px;color:var(--ink3);margin-top:2px">in ${escapeHtml(prop.name)}${prop.address ? ' · ' + escapeHtml(prop.address) : ''}</div>
+        ${infoBlock}
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn sm" onclick="openRoomEditModal(${propertyId}, '${safeRoom}')">✏️ Edit</button>
+        <button class="btn sm ghost" onclick="renameRoomPrompt(${propertyId}, '${safeRoom}')">Rename</button>
+      </div>
+    </div>
+
+    ${statCards}
+
+    <div style="margin-top:24px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div class="section-label" style="margin-bottom:0">Notes</div>
+      </div>
+      <div class="card" style="padding:14px 16px">${notesBlock}</div>
+    </div>
+
+    <div style="margin-top:24px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div class="section-label" style="margin-bottom:0">Projects in this room</div>
+        <button class="btn sm ghost" onclick="prefillProjectForRoom(${propertyId}, '${safeRoom}')" style="font-size:11px">+ New project here</button>
+      </div>
+      ${projectsBlock}
+    </div>
+
+    <div style="margin-top:24px">
+      <div class="section-label">Recent costs</div>
+      <div class="cost-entries">${costsBlock}</div>
+    </div>
+
+    <div style="margin-top:24px">
+      <div class="section-label">Recent time</div>
+      ${timeBlock}
+    </div>
+  `;
+}
+
+// Open the project modal pre-filled with this property + room
+function prefillProjectForRoom(propertyId, roomName) {
+  // Reuse the existing project modal flow
+  if (typeof openProjectModal === 'function') {
+    openProjectModal();
+  } else {
+    // Fallback: open the modal element directly
+    document.getElementById('modal-project')?.classList.add('active');
+  }
+  // Set property + room after the modal populates its dropdowns
+  setTimeout(() => {
+    const propSel = document.getElementById('pf-property');
+    if (propSel) {
+      propSel.value = String(propertyId);
+      if (typeof populateProjectRoomDropdown === 'function') populateProjectRoomDropdown(roomName);
+    }
+  }, 50);
+}
+
+// ── Room edit modal (info, photo, notes) ─────────────
+let editingRoomCtx = null;  // { propertyId, roomName }
+
+function openRoomEditModal(propertyId, roomName) {
+  editingRoomCtx = { propertyId, roomName };
+  const data = getRoomData(propertyId, roomName);
+  document.getElementById('rf-title').textContent = 'Edit ' + roomName;
+  document.getElementById('rf-floor').value = data.floor || '';
+  document.getElementById('rf-dimensions').value = data.dimensions || '';
+  document.getElementById('rf-area').value = data.area || '';
+  document.getElementById('rf-notes').value = data.notes || '';
+  pendingRoomPhoto = data.photo || null;
+  refreshRoomPhotoPreview();
+  document.getElementById('modal-room').classList.add('active');
+}
+
+let pendingRoomPhoto = null;
+
+function refreshRoomPhotoPreview() {
+  const preview = document.getElementById('rf-photo-preview');
+  if (!preview) return;
+  if (pendingRoomPhoto) {
+    preview.innerHTML = `<div class="preview-item"><img src="${pendingRoomPhoto}" style="width:100%;height:120px;object-fit:cover;border-radius:8px;margin-top:8px"><button class="preview-remove" onclick="pendingRoomPhoto=null;refreshRoomPhotoPreview()">✕</button></div>`;
+  } else {
+    preview.innerHTML = '';
+  }
+}
+
+function onRoomPhotoChosen(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    pendingRoomPhoto = e.target.result;
+    refreshRoomPhotoPreview();
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+function saveRoomEdit() {
+  if (!editingRoomCtx) return;
+  const { propertyId, roomName } = editingRoomCtx;
+  setRoomData(propertyId, roomName, {
+    floor: document.getElementById('rf-floor').value.trim(),
+    dimensions: document.getElementById('rf-dimensions').value.trim(),
+    area: document.getElementById('rf-area').value.trim(),
+    notes: document.getElementById('rf-notes').value.trim(),
+    photo: pendingRoomPhoto || null,
+  });
+  editingRoomCtx = null;
+  pendingRoomPhoto = null;
+  closeModal('modal-room');
+  // Re-render whichever room view is active
+  if (document.getElementById('view-room-detail')?.classList.contains('active')) {
+    renderRoomDetail();
+  } else {
+    renderAll();
+  }
+}
+
+// ── Firebase Cloud Sync ───────────────────────────────
+// IMPORTANT: Fill these in with values from your Firebase project console.
+// See SETUP.md for step-by-step instructions.
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBdcyOKrBwm1LuZuHJyzTwmnvIrWRK2veI",
+  authDomain: "home-projects-494421.firebaseapp.com",
+  projectId: "home-projects-494421",
+  storageBucket: "home-projects-494421.firebasestorage.app",
+  messagingSenderId: "14888233098",
+  appId: "1:14888233098:web:4c833eba003d8efc706573"
+};
+// The "household" doc ID where the shared data lives. Any string is fine —
+// pick something hard to guess. Everyone collaborating must use the same value.
+const HOUSEHOLD_ID = "kireheima-2026-7Kx9pQ";
+// Superuser can edit/delete any user's time log entries.
+const SUPERUSER_EMAIL = "erik.sigrun@gmail.com";
+
+let fbApp = null, fbAuth = null, fbDb = null, fbStorage = null;
+let fbUser = null;
+let fbReady = false;
+let fbUnsubscribe = null;        // listener for the household doc
+let fbCollabUnsubscribe = null;  // listener for the household meta (collaborators list)
+let applyingRemote = false;       // true while we're applying a remote snapshot, so we don't echo back
+let pendingWriteTimer = null;
+let lastLocalChangeAt = 0;
+
+async function loadFirebase() {
+  if (fbReady) return;
+  if (!FIREBASE_CONFIG.apiKey || FIREBASE_CONFIG.apiKey.startsWith("REPLACE_ME")) {
+    setSyncStatus("Cloud not configured — see SETUP.md");
+    const err = document.getElementById("cloud-signin-error");
+    if (err) {
+      err.style.display = "block";
+      err.textContent = "Firebase config missing. Edit FIREBASE_CONFIG in index.html.";
+    }
+    return;
+  }
+  // Dynamic ESM imports from Google's CDN
+  const [{ initializeApp }, authMod, fsMod, stMod] = await Promise.all([
+    import("https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js"),
+    import("https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js"),
+    import("https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js"),
+    import("https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js")
+  ]);
+  fbApp = initializeApp(FIREBASE_CONFIG);
+  fbAuth = authMod.getAuth(fbApp);
+  fbDb = fsMod.getFirestore(fbApp);
+  fbStorage = stMod.getStorage(fbApp);
+  // Stash the bits we need so other functions can use them
+  window._fbAuthMod = authMod;
+  window._fbFsMod = fsMod;
+  window._fbStMod = stMod;
+  fbReady = true;
+
+  authMod.onAuthStateChanged(fbAuth, (user) => {
+    fbUser = user;
+    if (user) {
+      showCloudSignedIn(user.email);
+      attachHouseholdListener();
+      // Backfill legacy entries (no user) with the current user
+      backfillTimeUserEmails();
+      renderAll();
+    } else {
+      showCloudSignedOut();
+      detachHouseholdListener();
+    }
+  });
+}
+
+async function handleGoogleSignIn() {
+  await loadFirebase();
+  if (!fbReady) return;
+  const { GoogleAuthProvider, signInWithPopup } = window._fbAuthMod;
+  const provider = new GoogleAuthProvider();
+  try {
+    await signInWithPopup(fbAuth, provider);
+  } catch(e) {
+    console.error("Sign-in error:", e);
+    const err = document.getElementById("cloud-signin-error");
+    if (err) {
+      err.style.display = "block";
+      err.textContent = "Sign-in failed: " + (e.message || e.code || e);
+    }
+    setSyncStatus("Sign-in failed");
+  }
+}
+
+async function handleSignOut() {
+  if (!fbAuth) return;
+  const { signOut } = window._fbAuthMod;
+  try { await signOut(fbAuth); } catch(e) {}
+}
+
+function showCloudSignedIn(email) {
+  const el = document.getElementById("cloud-user-email");
+  if (el) el.textContent = email || "";
+  const si = document.getElementById("cloud-sign-in-section");
+  const so = document.getElementById("cloud-signed-in-section");
+  if (si) si.style.display = "none";
+  if (so) so.style.display = "block";
+  const btn = document.getElementById("cloud-btn");
+  if (btn) btn.textContent = "☁️ Cloud ✓";
+  const errEl = document.getElementById("cloud-signin-error");
+  if (errEl) errEl.style.display = "none";
+}
+
+function showCloudSignedOut() {
+  const si = document.getElementById("cloud-sign-in-section");
+  const so = document.getElementById("cloud-signed-in-section");
+  if (si) si.style.display = "block";
+  if (so) so.style.display = "none";
+  const btn = document.getElementById("cloud-btn");
+  if (btn) btn.textContent = "☁️ Cloud";
+}
+
+function attachHouseholdListener() {
+  if (!fbReady || !fbUser) return;
+  const { doc, onSnapshot } = window._fbFsMod;
+  const ref = doc(fbDb, "households", HOUSEHOLD_ID);
+  // Live data subscription
+  if (fbUnsubscribe) fbUnsubscribe();
+  fbUnsubscribe = onSnapshot(ref, (snap) => {
+    if (!snap.exists()) {
+      setSyncStatus("Cloud is empty — uploading current data…");
+      // First time: push whatever we have locally
+      saveToCloud();
+      return;
+    }
+    const data = snap.data();
+    if (!data || !data.payload) return;
+    // Skip if this snapshot was caused by our own recent write
+    if (data.updatedAt && data.updatedAt.toMillis &&
+        Math.abs(data.updatedAt.toMillis() - lastLocalChangeAt) < 1500) {
+      return;
+    }
+    applyingRemote = true;
+    try {
+      const remote = data.payload;
+      db = remote;
+      if (!db.properties) db.properties = [];
+      if (!db.quotes) db.quotes = [];
+      nextId = Math.max(
+        ...[...db.projects, ...db.costs, ...db.timeLog, ...db.invoices, ...(db.quotes||[]), ...(db.properties||[])].map(x => x.id || 0),
+        0
+      ) + 1;
+      try { localStorage.setItem("hpt_db", JSON.stringify(db)); } catch(e) {}
+      renderAll();
+      // Tag any legacy time entries without userEmail with the current user
+      backfillTimeUserEmails();
+      // Make sure rooms are populated from any new project loc values
+      migrateProjectLocsToRooms();
+      const who = data.updatedBy || "someone";
+      setSyncStatus("☁️ Synced · " + new Date().toLocaleTimeString("is-IS"));
+      const fi = document.getElementById("cloud-file-info");
+      if (fi) fi.textContent = "Last update by " + who + " at " + new Date().toLocaleTimeString("is-IS");
+    } finally {
+      applyingRemote = false;
+    }
+  }, (err) => {
+    console.error("Snapshot error:", err);
+    setSyncStatus("Cloud read error — check allow-list");
+    const fi = document.getElementById("cloud-file-info");
+    if (fi) fi.textContent = "Permission denied — your email may not be on the allow-list yet.";
+  });
+  // Collaborators subscription (separate doc so non-owners can still read it)
+  const collabRef = doc(fbDb, "households", HOUSEHOLD_ID + "_meta");
+  if (fbCollabUnsubscribe) fbCollabUnsubscribe();
+  fbCollabUnsubscribe = onSnapshot(collabRef, (snap) => {
+    const list = snap.exists() ? (snap.data().collaborators || []) : [];
+    collaboratorEmails = list.map(e => (e || '').toLowerCase()).filter(Boolean);
+    renderCollaborators(list);
+    // Re-render time log views since the dropdown source changed
+    if (typeof renderAll === 'function') renderAll();
+  }, () => {});
+}
+
+function detachHouseholdListener() {
+  if (fbUnsubscribe) { fbUnsubscribe(); fbUnsubscribe = null; }
+  if (fbCollabUnsubscribe) { fbCollabUnsubscribe(); fbCollabUnsubscribe = null; }
+}
+
+// ── Photo handling for cloud sync ─────────────────────
+// Photos are stored as base64 in localStorage (fast render, works offline),
+// but uploaded to Firebase Storage when syncing to the cloud (Firestore docs
+// have a 1MB limit; Storage is built for binary). The cloud doc only stores URLs.
+
+// Cache: map base64 string → uploaded download URL, so we don't re-upload
+// the same photo every save cycle.
+const photoUploadCache = new Map();
+
+function isBase64Photo(s) {
+  return typeof s === "string" && s.startsWith("data:image/");
+}
+
+function isStorageUrl(s) {
+  return typeof s === "string" && (s.startsWith("https://firebasestorage.googleapis.com/") || s.startsWith("https://storage.googleapis.com/"));
+}
+
+async function uploadPhotoIfNeeded(base64) {
+  if (!base64) return null;
+  if (isStorageUrl(base64)) return base64; // already a URL, nothing to do
+  if (!isBase64Photo(base64)) return base64; // unknown format — pass through
+  if (photoUploadCache.has(base64)) return photoUploadCache.get(base64);
+
+  const { ref, uploadString, getDownloadURL } = window._fbStMod;
+  // Generate a stable-ish filename from the base64 prefix so we don't duplicate
+  const hash = await sha1(base64);
+  // Detect mime
+  const m = base64.match(/^data:(image\/[a-z+.-]+);base64,/);
+  const ext = m ? (m[1].split("/")[1].split("+")[0]) : "jpg";
+  const path = `households/${HOUSEHOLD_ID}/photos/${hash}.${ext}`;
+  const fileRef = ref(fbStorage, path);
+  await uploadString(fileRef, base64, "data_url");
+  const url = await getDownloadURL(fileRef);
+  photoUploadCache.set(base64, url);
+  return url;
+}
+
+async function sha1(s) {
+  const buf = new TextEncoder().encode(s);
+  const hash = await crypto.subtle.digest("SHA-1", buf);
+  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+// Walk the object and replace anything Firestore cannot store:
+// - undefined → null
+// - NaN/Infinity → null
+// - Functions/symbols → drop
+// - Arrays of arrays → wrap inner array in a {items: [...]} object
+function sanitizeForFirestore(value, _path = "") {
+  if (value === undefined) return null;
+  if (value === null) return null;
+  const t = typeof value;
+  if (t === "number") {
+    if (Number.isNaN(value) || !Number.isFinite(value)) return null;
+    return value;
+  }
+  if (t === "string" || t === "boolean") return value;
+  if (t === "function" || t === "symbol") return null;
+  if (Array.isArray(value)) {
+    return value.map((item, i) => {
+      const s = sanitizeForFirestore(item, _path + "[" + i + "]");
+      // Firestore forbids arrays directly inside arrays.
+      if (Array.isArray(s)) {
+        console.warn("Sanitizer: wrapping nested array at", _path + "[" + i + "]");
+        return { items: s };
+      }
+      return s;
+    });
+  }
+  if (t === "object") {
+    // Plain object — recurse into keys
+    const out = {};
+    for (const k of Object.keys(value)) {
+      const sv = sanitizeForFirestore(value[k], _path + "." + k);
+      if (sv === undefined) continue;
+      out[k] = sv;
+    }
+    return out;
+  }
+  return null;
+}
+
+// Build a "cloud-shaped" copy of db: same structure, but every base64 photo
+// has been replaced with a Storage URL.
+async function dbForCloud() {
+  const clone = JSON.parse(JSON.stringify(db));
+  const tasks = [];
+  const replaceIn = (arr) => {
+    if (!Array.isArray(arr)) return;
+    arr.forEach((item, i) => {
+      if (item && item.photo && isBase64Photo(item.photo)) {
+        tasks.push(uploadPhotoIfNeeded(item.photo).then(url => { item.photo = url; }));
+      }
+    });
+  };
+  replaceIn(clone.costs);
+  replaceIn(clone.quotes);
+  replaceIn(clone.properties);
+  await Promise.all(tasks);
+  return sanitizeForFirestore(clone);
+}
+
+async function saveToCloud() {
+  if (!fbReady || !fbUser) return;
+  const { doc, setDoc, serverTimestamp } = window._fbFsMod;
+  const ref = doc(fbDb, "households", HOUSEHOLD_ID);
+  try {
+    setSyncStatus("☁️ Uploading photos…");
+    const cloudDb = await dbForCloud();
+    setSyncStatus("☁️ Saving…");
+    lastLocalChangeAt = Date.now();
+    await setDoc(ref, {
+      payload: cloudDb,
+      updatedAt: serverTimestamp(),
+      updatedBy: fbUser.email || fbUser.uid
+    });
+    setSyncStatus("☁️ Saved · " + new Date().toLocaleTimeString("is-IS"));
+  } catch(e) {
+    console.error("Cloud save error:", e);
+    setSyncStatus("Cloud save failed");
+    const fi = document.getElementById("cloud-file-info");
+    if (fi) fi.textContent = "Save failed: " + (e.message || e.code || e);
+  }
+}
+
+// Debounced cloud save: when the user makes several quick changes,
+// we batch them into one write after 600ms of quiet.
+function scheduleCloudSave() {
+  if (applyingRemote) return;          // don't echo remote changes back
+  if (!fbReady || !fbUser) return;     // not signed in — local only
+  if (pendingWriteTimer) clearTimeout(pendingWriteTimer);
+  pendingWriteTimer = setTimeout(() => {
+    pendingWriteTimer = null;
+    saveToCloud();
+  }, 600);
+}
+
+// ── Collaborators (allow-list) ────────────────────────
+function renderCollaborators(list) {
+  const wrap = document.getElementById("cloud-collaborators");
+  if (!wrap) return;
+  if (!list || list.length === 0) {
+    wrap.innerHTML = '<div style="font-size:12px;color:var(--ink3);font-style:italic">No collaborators yet — add an email below.</div>';
+    return;
+  }
+  wrap.innerHTML = list.map(email => {
+    const e = (email || '').toLowerCase();
+    const name = userDisplayName(e);
+    const safeEmail = email.replace(/'/g, "\\'");
+    return `
+    <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;background:var(--surface2);border-radius:6px;font-size:12px;flex-wrap:wrap">
+      <span style="flex:1;min-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${email}</span>
+      <input type="text" placeholder="Display name" value="${name === 'Unassigned' ? '' : name.replace(/"/g, '&quot;')}"
+        style="padding:4px 8px;border:1px solid var(--border2);border-radius:4px;font-size:12px;font-family:inherit;width:130px"
+        onblur="setUserDisplayName('${safeEmail}', this.value);renderAll()">
+      <button class="btn sm" style="padding:2px 8px" onclick="removeCollaborator('${safeEmail}')">✕</button>
+    </div>`;
+  }).join("");
+}
+
+async function addCollaborator() {
+  const input = document.getElementById("cloud-add-email");
+  const errEl = document.getElementById("cloud-collab-error");
+  if (errEl) errEl.style.display = "none";
+  if (!input) return;
+  const email = (input.value || "").trim().toLowerCase();
+  if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+    if (errEl) { errEl.style.display = "block"; errEl.textContent = "Enter a valid email."; }
+    return;
+  }
+  if (!fbReady || !fbUser) return;
+  const { doc, setDoc, getDoc, arrayUnion } = window._fbFsMod;
+  const ref = doc(fbDb, "households", HOUSEHOLD_ID + "_meta");
+  try {
+    const snap = await getDoc(ref);
+    const current = snap.exists() ? (snap.data().collaborators || []) : [];
+    if (current.includes(email)) {
+      if (errEl) { errEl.style.display = "block"; errEl.textContent = "Already on the list."; }
+      return;
+    }
+    await setDoc(ref, { collaborators: [...current, email] }, { merge: true });
+    input.value = "";
+  } catch(e) {
+    console.error("Add collaborator error:", e);
+    if (errEl) { errEl.style.display = "block"; errEl.textContent = "Failed: " + (e.message || e.code); }
+  }
+}
+
+async function removeCollaborator(email) {
+  if (!fbReady || !fbUser) return;
+  if (!confirm("Remove " + email + " from collaborators?")) return;
+  const { doc, setDoc, getDoc } = window._fbFsMod;
+  const ref = doc(fbDb, "households", HOUSEHOLD_ID + "_meta");
+  try {
+    const snap = await getDoc(ref);
+    const current = snap.exists() ? (snap.data().collaborators || []) : [];
+    const next = current.filter(e => e !== email);
+    await setDoc(ref, { collaborators: next }, { merge: true });
+  } catch(e) {
+    console.error("Remove collaborator error:", e);
+  }
+}
+
+function setSyncStatus(msg) {
+  const el = document.getElementById("sync-status");
+  if (el) el.textContent = "v1.1 · " + msg;
+}
+
+// Master saveDB: writes to localStorage immediately, schedules a cloud push.
+function saveDB() {
+  try { localStorage.setItem("hpt_db", JSON.stringify(db)); } catch(e) {}
+  scheduleCloudSave();
+}
+
+function openSyncModal() {
+  openModal("modal-sync");
+  loadFirebase();
+}
+
+function initCloudOnStartup() {
+  // Auto-load Firebase so the auth state restores quickly.
+  // If the user was previously signed in, the onAuthStateChanged callback
+  // will fire and attach the live snapshot listener.
+  loadFirebase();
+}
+
+// ── Export / Import backup ─────────────────────────────
+function exportData() {
+  const blob = new Blob([JSON.stringify(db, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "home-projects-backup-" + today() + ".json";
+  a.click();
+}
+
+function importData(input) {
+  if (!input.files[0]) return;
+  if (!confirm("Import this backup? It will replace all current data.")) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      db = JSON.parse(e.target.result);
+      if (!db.properties) db.properties = [];
+      nextId = Math.max(...[...db.projects, ...db.costs, ...db.timeLog, ...db.invoices, ...(db.quotes||[]), ...(db.properties||[])].map(x => x.id || 0), 0) + 1;
+      saveDB();
+      renderAll();
+      closeModal("modal-sync");
+    } catch(err) { alert("Invalid backup file."); }
+  };
+  reader.readAsText(input.files[0]);
+}
+
+// ── Init ───────────────────────────────────────────────
+loadDB();
+backfillTimeUserEmails();
+migrateProjectLocsToRooms();
+renderAll();
+initCloudOnStartup();
+</script>
+</body>
+</html>
+ 
