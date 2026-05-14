@@ -520,8 +520,13 @@ body {
   border-top: 1px solid rgba(255,255,255,0.08);
   padding: 0 4px;
   align-items: stretch;
-  justify-content: space-around;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  justify-content: flex-start;
 }
+.bottom-nav::-webkit-scrollbar { display: none; }
 
 .bottom-nav-item {
   display: flex;
@@ -529,14 +534,15 @@ body {
   align-items: center;
   justify-content: center;
   gap: 3px;
-  padding: 6px 8px;
+  padding: 6px 12px;
   cursor: pointer;
   color: rgba(255,255,255,0.45);
   font-size: 9px;
   font-weight: 500;
   letter-spacing: 0.02em;
   border-top: 2px solid transparent;
-  flex: 1;
+  flex: 0 0 auto;
+  min-width: 56px;
   transition: all 0.15s;
   text-align: center;
 }
@@ -764,6 +770,12 @@ body {
   </div>
   <div class="bottom-nav-item" onclick="showView('rooms')" data-view="rooms">
     <span class="bn-icon">🚪</span><span>Rooms</span>
+  </div>
+  <div class="bottom-nav-item" onclick="showView('reports')" data-view="reports">
+    <span class="bn-icon">📊</span><span>Reports</span>
+  </div>
+  <div class="bottom-nav-item" onclick="showView('properties')" data-view="properties">
+    <span class="bn-icon">🏘</span><span>Properties</span>
   </div>
 </nav>
 
