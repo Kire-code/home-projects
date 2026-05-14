@@ -1626,7 +1626,6 @@ function renderDashboard() {
   const noPropertyProjects = db.projects.filter(p => !p.propertyId);
   let rows = props.map(prop => {
     const projs = db.projects.filter(p => p.propertyId === prop.id);
-    if (!projs.length) return null;
     const spent = projs.reduce((s, p) => s + projectCosts(p.id), 0);
     const hrs = projs.reduce((s, p) => s + projectHours(p.id), 0);
     const budget = projs.reduce((s, p) => s + Number(p.budget||0), 0);
