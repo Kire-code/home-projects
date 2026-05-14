@@ -1608,9 +1608,9 @@ function renderDashboard() {
   const list = document.getElementById('dash-project-list');
   if (!db.projects.length) {
     list.innerHTML = `<div class="empty-state"><div class="empty-icon">🏠</div><div class="empty-title">No projects yet</div><div class="empty-text">Click "+ New Project" to get started</div></div>`;
-    return;
+  } else {
+    list.innerHTML = sortProjectsByStatus(db.projects).map(p => projectCardHTML(p)).join('');
   }
-  list.innerHTML = sortProjectsByStatus(db.projects).map(p => projectCardHTML(p)).join('');
 
   // ── Property breakdown ──
   const breakdown = document.getElementById('dash-property-breakdown');
@@ -1625,7 +1625,7 @@ function renderDashboard() {
   // Build data rows
   const noPropertyProjects = db.projects.filter(p => !p.propertyId);
   let rows = props.map(prop => {
-    const projs = db.projects.filter(p => p.propertyId === prop.id);
+    const projs = db.projects.filter(p => String(p.propertyId) === String(prop.id));
     const spent = projs.reduce((s, p) => s + projectCosts(p.id), 0);
     const hrs = projs.reduce((s, p) => s + projectHours(p.id), 0);
     const budget = projs.reduce((s, p) => s + Number(p.budget||0), 0);
