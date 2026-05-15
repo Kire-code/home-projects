@@ -503,11 +503,15 @@ body {
   .prop-row > div { flex: 1 1 45%; min-width: 110px; text-align: left !important; }
   .prop-row > div:first-child { flex: 1 1 100%; }
 
-  /* Bottom nav - handled in dedicated @media block above */
+  /* Bottom nav */
+  .bottom-nav {
+    display: flex !important;
+  }
 }
 
 /* Bottom navigation bar - mobile only */
 .bottom-nav {
+  display: none;
   position: fixed;
   bottom: 0; left: 0; right: 0;
   background: var(--ink);
@@ -521,10 +525,6 @@ body {
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   justify-content: flex-start;
-  display: none;
-}
-@media (max-width: 700px) {
-  .bottom-nav { display: flex; }
 }
 .bottom-nav::-webkit-scrollbar { display: none; }
 
@@ -3391,7 +3391,7 @@ function openRoomEditModal(propertyId, roomName) {
   document.getElementById('rf-notes').value = data.notes || '';
   pendingRoomPhoto = data.photo || null;
   refreshRoomPhotoPreview();
-  document.getElementById('modal-room').classList.add('active');
+  openModal('modal-room');
 }
 
 let pendingRoomPhoto = null;
